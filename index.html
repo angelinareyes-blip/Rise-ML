@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Mlm Ops Pulse",
+  "schemaVersion": 1,
+  "description": "MLM Operations Pulse — 21 FCs completos, datos DSOM W19. Tabs: Red Semanal (ranking, bubble chart, QNP, Wave SLA, Picking/Packing NP, matriz) y Tendencia Diaria (carga en vivo desde DSOM para FCs seleccionados). Filtros por cluster. Priority scoring CIE.",
+  "mcpTools": [
+    "mcp__dark-side-of-the-moon__get_network_summary",
+    "mcp__dark-side-of-the-moon__get_operational_trends"
+  ],
+  "mcpServerNames": [
+    "dark-side-of-the-moon",
+    "dark-side-of-the-moon"
+  ]
+}
+</script>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLM Operations Pulse</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root{color-scheme:light;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F3F3F3;color:#1a1a2e;font-size:13px;}
+/* HEADER */
+.hdr{background:#1a1a2e;padding:12px 20px;display:flex;align-items:center;gap:12px;}
+.hdr-logo{width:34px;height:34px;background:#FFE600;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#1a1a2e;flex-shrink:0;}
+.hdr h1{color:#fff;font-size:17px;font-weight:700;}
+.hdr p{color:#aaa;font-size:11px;margin-top:1px;}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.w-badge{background:#FFE600;color:#1a1a2e;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;}
+.src-badge{background:#ffffff1a;color:#ccc;font-size:10px;padding:4px 10px;border-radius:20px;}
+/* TABS */
+.tabs{background:#fff;border-bottom:2px solid #FFE600;display:flex;align-items:center;padding:0 20px;gap:0;}
+.tab{padding:11px 18px;font-size:13px;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;}
+.tab:hover{color:#1a1a2e;}
+.tab.active{color:#1a1a2e;border-bottom-color:#FFE600;}
+.tab-right{margin-left:auto;display:flex;gap:8px;padding:8px 0;}
+/* FILTERS */
+.filters{background:#f8f8f8;border-bottom:1px solid #e8e8e8;padding:8px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.fl{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.4px;}
+.chip{background:#fff;border:1px solid #ddd;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;font-weight:600;transition:all .12s;}
+.chip:hover{border-color:#1a1a2e;}
+.chip.on{background:#1a1a2e;color:#FFE600;border-color:#1a1a2e;}
+.loading-bar{height:3px;background:linear-gradient(90deg,#FFE600 0%,#C9DAF8 50%,#FFE600 100%);background-size:200%;animation:shimmer 1.5s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* MAIN */
+.main{padding:16px 20px;max-width:1500px;margin:0 auto;}
+/* KPI CARDS */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+.card{background:#fff;border-radius:8px;padding:12px 14px;border-left:4px solid #C9DAF8;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.card.r{border-color:#EA4335;}.card.g{border-color:#34A853;}.card.a{border-color:#FBBC04;}.card.b{border-color:#C9DAF8;}
+.card .lbl{font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.card .val{font-size:22px;font-weight:800;color:#1a1a2e;line-height:1.1;margin-top:2px;}
+.card .sub{font-size:10px;color:#aaa;margin-top:3px;line-height:1.4;}
+.card .dlt{font-size:11px;font-weight:700;margin-top:2px;}
+.bad{color:#EA4335;}.ok{color:#34A853;}.warn{color:#FBBC04;}
+/* PANELS */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+.panel{background:#fff;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.panel h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.panel h2 .bdg{background:#F3F3F3;padding:2px 7px;border-radius:8px;font-size:10px;color:#888;}
+/* ALERTS */
+.alerts{margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.alrt{display:flex;gap:8px;padding:8px 12px;border-radius:6px;align-items:flex-start;}
+.alrt.cr{background:#FEE2E2;border-left:3px solid #EA4335;}
+.alrt.wn{background:#FEF9C3;border-left:3px solid #FBBC04;}
+.alrt.if{background:#DBEAFE;border-left:3px solid #3B82F6;grid-column:1/-1;}
+.alrt-ico{font-size:14px;flex-shrink:0;margin-top:1px;}
+.alrt-txt{font-size:11px;line-height:1.5;}
+.alrt-txt strong{font-weight:700;}
+/* PRIORITY TABLE */
+.ptbl{width:100%;border-collapse:collapse;font-size:12px;}
+.ptbl th{text-align:left;padding:6px 8px;background:#1a1a2e;color:#FFE600;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+.ptbl td{padding:7px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.ptbl tr:hover td{background:#fafafa;}
+.ptbl tr:last-child td{border:none;}
+.rk{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:800;}
+.rk1{background:#EA4335;color:#fff;}.rk2{background:#FF6B35;color:#fff;}.rk3{background:#FBBC04;color:#1a1a2e;}.rk4{background:#eee;color:#666;}
+.fc{font-weight:700;font-size:12px;}
+.ctag{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;margin-left:3px;}
+.tt{background:#C9DAF8;color:#1a1a2e;}.th{background:#D5F5E3;color:#1a1a2e;}.ts{background:#FFE600;color:#1a1a2e;}.tm{background:#E8D5F5;color:#1a1a2e;}.to{background:#eee;color:#666;}
+.bar-wrap{display:flex;align-items:center;gap:5px;}
+.bar-bg{width:60px;height:5px;background:#f0f0f0;border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;}
+.br{background:#EA4335;}.ba{background:#FBBC04;}.bg{background:#34A853;}
+/* MATRIX */
+.mtx-wrap{overflow-x:auto;}
+.mtx{width:100%;border-collapse:collapse;font-size:11px;}
+.mtx th{padding:6px 7px;background:#1a1a2e;color:#FFE600;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.2px;white-space:nowrap;border-right:1px solid #2a2a3e;}
+.mtx th.s1{border-left:3px solid #FFE600;}.mtx th.s2{border-left:3px solid #C9DAF8;}
+.mtx td{padding:6px 7px;border-bottom:1px solid #f2f2f2;border-right:1px solid #f8f8f8;white-space:nowrap;}
+.mtx td:first-child{font-weight:700;background:#fafafa;position:sticky;left:0;z-index:1;}
+.mtx tr:hover td{background:#FFF9CC!important;}
+.mtx tr:hover td:first-child{background:#FFF3AA!important;}
+.best{background:#D5F5E3!important;color:#137333;font-weight:800;}
+.worst{background:#FEE2E2!important;color:#B91C1C;font-weight:800;}
+.caution{background:#FEF9C3;color:#7D4700;}
+.mtx td.s1c{border-left:2px solid #FFE600;}.mtx td.s2c{border-left:2px solid #C9DAF8;}
+.muted{color:#bbb;font-style:italic;}
+/* DAILY VIEW */
+.daily-wrap{display:none;}
+.daily-wrap.show{display:block;}
+.weekly-wrap{display:block;}
+.weekly-wrap.hide{display:none;}
+.fc-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fc-btn{background:#fff;border:1px solid #ddd;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;font-weight:600;transition:all .12s;}
+.fc-btn.on{background:#1a1a2e;color:#FFE600;border-color:#1a1a2e;}
+.loader{text-align:center;padding:40px;color:#aaa;font-size:13px;}
+/* FOOTER */
+.footer{text-align:center;padding:14px;color:#bbb;font-size:10px;margin-top:4px;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">ML</div>
+  <div><h1>MLM Operations Pulse</h1><p>Red México — 21 Fulfillment Centers</p></div>
+  <div class="hdr-right">
+    <span class="src-badge">DSOM · BigQuery</span>
+    <span class="w-badge" id="weekLabel">W19 · 2026</span>
+  </div>
+</div>
+
+<div id="loadingBar" class="loading-bar" style="display:none;"></div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('semanal',this)">📊 Red Semanal</div>
+  <div class="tab" onclick="switchTab('diario',this)">📈 Tendencia Diaria</div>
+  <div class="tab-right">
+    <span style="font-size:11px;color:#aaa;" id="lastUpdate">Datos W19 WTD · 12-May-2026</span>
+  </div>
+</div>
+
+<div class="filters">
+  <span class="fl">Cluster:</span>
+  <button class="chip on" onclick="setCluster('all',this)">Todos (21)</button>
+  <button class="chip" onclick="setCluster('Totable',this)">Totable (5)</button>
+  <button class="chip" onclick="setCluster('Hybrid',this)">Hybrid (3)</button>
+  <button class="chip" onclick="setCluster('Non-Totable',this)">Non-Totable (5)</button>
+  <button class="chip" onclick="setCluster('Super',this)">Super (1)</button>
+  <button class="chip" onclick="setCluster('Metro',this)">Metro (1)</button>
+  <button class="chip" onclick="setCluster('Intra-City',this)">Intra-City (1)</button>
+</div>
+
+<div class="main">
+
+<!-- ═══════════ WEEKLY VIEW ═══════════ -->
+<div class="weekly-wrap" id="weeklyView">
+
+  <div class="cards">
+    <div class="card r">
+      <div class="lbl">Wave SLA — Prom. Red</div>
+      <div class="val">71.1<span style="font-size:14px">%</span></div>
+      <div class="sub">Best: MXCD14 83.9% · Worst FC: MXBC01 37.3%</div>
+      <div class="dlt bad">↓ 8.9pp bajo target 80%</div>
+    </div>
+    <div class="card a">
+      <div class="lbl">ONP — Mejor Totable</div>
+      <div class="val">39.6</div>
+      <div class="sub">u/h MXCD07 · Red best: MXCD20 67.5</div>
+      <div class="dlt warn">↔ Cluster Totable 35–40 u/h</div>
+    </div>
+    <div class="card r">
+      <div class="lbl">Quality NP — Prom. Totable</div>
+      <div class="val">10.2</div>
+      <div class="sub">u/h · Best red: USTX01 56.3 · MXCD09 4.3 #14</div>
+      <div class="dlt bad">⚠ MXCD09 al 7.5% del benchmark</div>
+    </div>
+    <div class="card b">
+      <div class="lbl">% NS Quality Control</div>
+      <div class="val">100<span style="font-size:14px">%</span></div>
+      <div class="sub">En los 21 FCs MLM — sin diferenciación</div>
+      <div class="dlt warn">⚠ Problema sistémico de red</div>
+    </div>
+  </div>
+
+  <!-- ALERTS -->
+  <div class="alerts">
+    <div class="alrt cr"><span class="alrt-ico">🔴</span><div class="alrt-txt"><strong>MXCD07 — Prioridad #1:</strong> Wave SLA 64.4% (#12 red), Picking NP 60.7 (#13), QNP 11.4. Packing top (#2) pero picking/servicio arrastran el ONP.</div></div>
+    <div class="alrt cr"><span class="alrt-ico">🔴</span><div class="alrt-txt"><strong>MXCD09 — Quality crítica:</strong> QNP 4.3 u/h (#14/21 = 7.5% del mejor). Wave SLA 69.2% (#11). Corrective Count crónico: 15 u/h vs 93.4 best. 28-31% new hires.</div></div>
+    <div class="alrt wn"><span class="alrt-ico">🟡</span><div class="alrt-txt"><strong>MXCD02 — Wave SLA 56.3%:</strong> Sorter+automation pero SLA #14 en red. Picking NP excelente (80.2 #3), QNP #2. Desbalance severo entre productividad y servicio.</div></div>
+    <div class="alrt wn"><span class="alrt-ico">🟡</span><div class="alrt-txt"><strong>MXCD14 — teo_lost 65.2%:</strong> Mejor Wave SLA (83.9% #1) pero pérdida de inventario extrema. QNP 8.7. Auditoría de inventario urgente.</div></div>
+    <div class="alrt if"><span class="alrt-ico">📊</span><div class="alrt-txt"><strong>% Non-Systemic quality_control = 100% en TODOS los 21 FCs MLM.</strong> El WMS no genera tareas de control de calidad sistémico en ningún site. FPP debe medirse vía Looker Studio TEO. Dato de calidad disponible en DSOM: <strong>Quality Net Productivity</strong> (QNP = u auditoría/h). MXCD09 #14, MXCD12 #15 son los más críticos del cluster.</div></div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="row2">
+    <div class="panel">
+      <h2>🔵 Mapa de Prioridad <span class="bdg">Tamaño = QNP inverso (mayor burbuja = peor calidad)</span></h2>
+      <canvas id="bubbleChart" height="210"></canvas>
+      <p style="font-size:10px;color:#aaa;margin-top:6px;">X = ONP (u/h) · Y = Wave SLA (%) · Línea roja = target 80% · Verde = bueno · Rojo = intervención</p>
+    </div>
+    <div class="panel">
+      <h2>🎯 Tabla de Prioridades CIE <span class="bdg">Score = brecha × peso</span></h2>
+      <div style="overflow-y:auto;max-height:290px;">
+        <table class="ptbl" id="priorityTbl"><thead><tr><th>#</th><th>FC</th><th>Wave SLA</th><th>ONP</th><th>Pick NP</th><th>QNP</th><th>Score</th></tr></thead><tbody id="priorityBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="row3">
+    <div class="panel">
+      <h2>📦 Picking NP vs Packing NP</h2>
+      <canvas id="prodChart" height="200"></canvas>
+    </div>
+    <div class="panel">
+      <h2>🔬 Quality Net Productivity (QNP)</h2>
+      <canvas id="qnpChart" height="200"></canvas>
+    </div>
+    <div class="panel">
+      <h2>🌊 Wave SLA % ranking</h2>
+      <canvas id="slaChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- FULL MATRIX -->
+  <div class="panel">
+    <h2>📋 Full FC Matrix — Todos los KPIs W19 <span class="bdg">🟢 Mejor · 🔴 Peor · 🟡 Bajo target</span></h2>
+    <div class="mtx-wrap">
+      <table class="mtx">
+        <thead><tr>
+          <th>FC</th><th>Cluster</th>
+          <th class="s1">Wave SLA%</th><th class="s1">ONP</th><th class="s1">Pick NP</th><th class="s1">Pack NP</th>
+          <th class="s2">QNP</th><th class="s2">%NS QC</th>
+        </tr></thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+    <p style="font-size:10px;color:#aaa;margin-top:8px;">Fuente: DSOM get_network_summary W19 WTD · %NS QC = % Non-Systemic quality_control (100% red completa = sin control sistémico activo)</p>
+  </div>
+
+</div><!-- end weeklyView -->
+
+<!-- ═══════════ DAILY TREND VIEW ═══════════ -->
+<div class="daily-wrap" id="dailyView">
+  <div class="panel" style="margin-bottom:12px;">
+    <h2>📈 Selecciona FCs para ver tendencia diaria <span class="bdg">Datos D-7 desde DSOM</span></h2>
+    <div class="fc-selector" id="fcSelector"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <span class="fl">KPI:</span>
+      <button class="chip on" onclick="setDailyKpi('wave_sla',this)">Wave SLA%</button>
+      <button class="chip" onclick="setDailyKpi('Outbound Net Productivity',this)">ONP</button>
+      <button class="chip" onclick="setDailyKpi('Picking Net Productivity',this)">Picking NP</button>
+      <button class="chip" onclick="setDailyKpi('Quality Net Productivity',this)">Quality NP</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h2 id="dailyChartTitle">📈 Tendencia Diaria — Wave SLA%</h2>
+    <div id="dailyLoader" class="loader">Selecciona FCs y haz click en <strong>Cargar Datos</strong></div>
+    <canvas id="dailyChart" height="280" style="display:none;"></canvas>
+    <div style="text-align:center;margin-top:12px;">
+      <button onclick="loadDailyData()" style="background:#FFE600;border:none;padding:8px 20px;border-radius:20px;font-weight:700;cursor:pointer;font-size:13px;">🔄 Cargar Datos desde DSOM</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+<div class="footer">MLM Operations Pulse · CIE MercadoLibre México · Datos: Dark Side of the Moon (DSOM) · W19 2026 · Cowork Artifact</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  EMBEDDED DATA — DSOM W19 WTD (May 6–12, 2026)
+// ═══════════════════════════════════════════════════
+const DATA = [
+  {id:'MXCD02', cluster:'Totable',     onp:36.4, pick:80.2,  pack:167.2, sla:56.3, qnp:18.2},
+  {id:'MXCD05', cluster:'Non-Totable', onp:14.7, pick:40.6,  pack:124.1, sla:52.1, qnp:7.7},
+  {id:'MXCD06', cluster:'Super',       onp:33.1, pick:77.4,  pack:132.2, sla:77.0, qnp:17.3},
+  {id:'MXCD07', cluster:'Totable',     onp:39.6, pick:60.7,  pack:240.3, sla:64.4, qnp:11.4},
+  {id:'MXCD08', cluster:'Otros',       onp:7.2,  pick:27.7,  pack:9.9,   sla:36.7, qnp:0.6},
+  {id:'MXCD09', cluster:'Totable',     onp:32.1, pick:64.3,  pack:164.3, sla:69.2, qnp:4.3},
+  {id:'MXCD10', cluster:'Totable',     onp:34.2, pick:70.6,  pack:172.6, sla:73.5, qnp:11.6},
+  {id:'MXCD11', cluster:'Non-Totable', onp:20.4, pick:48.4,  pack:139.1, sla:72.0, qnp:7.4},
+  {id:'MXCD12', cluster:'Non-Totable', onp:20.7, pick:43.6,  pack:171.9, sla:70.4, qnp:3.6},
+  {id:'MXCD14', cluster:'Non-Totable', onp:10.6, pick:23.3,  pack:37.8,  sla:83.9, qnp:8.7},
+  {id:'MXCD20', cluster:'Intra-City',  onp:67.5, pick:125.7, pack:190.3, sla:53.3, qnp:3.2},
+  {id:'MXGT01', cluster:'Hybrid',      onp:32.4, pick:70.7,  pack:171.6, sla:76.2, qnp:9.4},
+  {id:'MXJC01', cluster:'Totable',     onp:35.4, pick:78.9,  pack:204.7, sla:72.9, qnp:13.6},
+  {id:'MXJC02', cluster:'Non-Totable', onp:22.6, pick:58.3,  pack:151.1, sla:52.5, qnp:1.1},
+  {id:'MXNL01', cluster:'Hybrid',      onp:36.6, pick:78.3,  pack:245.2, sla:77.9, qnp:14.8},
+  {id:'MXPB01', cluster:'Otros',       onp:17.2, pick:37.4,  pack:72.0,  sla:82.3, qnp:0.5},
+  {id:'MXSO01', cluster:'Metro',       onp:40.9, pick:75.4,  pack:157.4, sla:58.0, qnp:10.7},
+  {id:'MXYU01', cluster:'Hybrid',      onp:36.7, pick:69.8,  pack:206.9, sla:76.6, qnp:8.0},
+  {id:'USTX01', cluster:'Otros',       onp:49.7, pick:99.9,  pack:149.8, sla:46.3, qnp:56.3},
+  {id:'MXBC01', cluster:'Otros',       onp:36.4, pick:71.7,  pack:150.7, sla:37.3, qnp:2.6},
+  {id:'MXCH02', cluster:'Otros',       onp:0.1,  pick:1.7,   pack:0.3,   sla:null, qnp:3.1},
+];
+
+const CLUSTER_COLORS = {
+  'Totable':'#C9DAF8','Hybrid':'#D5F5E3','Non-Totable':'#FFE4B5',
+  'Super':'#FFE600','Metro':'#E8D5F5','Intra-City':'#FFDDD2','Otros':'#eee'
+};
+
+// ═══ State ═══
+let activeCluster = 'all';
+let activeTab = 'semanal';
+let activeDailyKpi = 'wave_sla';
+let selectedFCs = ['MXCD07','MXCD09','MXCD10','MXJC01','MXCD02'];
+let charts = {};
+let dailyChart = null;
+
+// ═══ Priority Score ═══
+function score(w) {
+  let s = 0;
+  if (w.sla  != null) s += Math.max(0, 80  - w.sla)  * 2.0;
+  if (w.onp  != null) s += Math.max(0, 45  - w.onp)  * 0.3;
+  if (w.pick != null) s += Math.max(0, 75  - w.pick) * 0.15;
+  if (w.qnp  != null) s += Math.max(0, 14  - w.qnp)  * 0.5;
+  return Math.round(s * 10) / 10;
+}
+
+// ═══ Filter ═══
+function filtered() {
+  return activeCluster === 'all' ? DATA : DATA.filter(w => w.cluster === activeCluster);
+}
+
+// ═══ Cluster tag HTML ═══
+function clusterTag(c) {
+  const map = {'Totable':'tt','Hybrid':'th','Non-Totable':'to','Super':'ts','Metro':'tm','Intra-City':'tt','Otros':'to'};
+  return `<span class="ctag ${map[c]||'to'}">${c}</span>`;
+}
+
+// ═══ Value cell class ═══
+function vc(v,dir,t1,t2) {
+  if(v==null) return 'muted';
+  if(dir==='h') return v>=t1?'ok':v>=t2?'warn':'bad';
+  return v<=t1?'ok':v<=t2?'warn':'bad';
+}
+
+// ═══ Render Priority Table ═══
+function renderPriority() {
+  const d = filtered().map(w=>({...w,s:score(w)})).sort((a,b)=>b.s-a.s);
+  const max = Math.max(...d.map(x=>x.s));
+  const body = document.getElementById('priorityBody');
+  body.innerHTML = d.map((w,i)=>{
+    const r = i+1, rc = r===1?'rk1':r===2?'rk2':r===3?'rk3':'rk4';
+    const bw = max>0?Math.round((w.s/max)*55):0;
+    const bc = w.s>35?'br':w.s>20?'ba':'bg';
+    const sfmt = v => v!=null ? v.toFixed(1) : '—';
+    return `<tr>
+      <td><span class="rk ${rc}">${r}</span></td>
+      <td><span class="fc">${w.id}</span>${clusterTag(w.cluster)}</td>
+      <td class="${vc(w.sla,'h',78,68)}">${sfmt(w.sla)}%</td>
+      <td class="${vc(w.onp,'h',40,30)}">${sfmt(w.onp)}</td>
+      <td class="${vc(w.pick,'h',75,55)}">${sfmt(w.pick)}</td>
+      <td class="${vc(w.qnp,'h',12,6)}">${sfmt(w.qnp)}</td>
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${bc}" style="width:${bw}px"></div></div><strong>${w.s}</strong></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══ Render Matrix ═══
+function renderMatrix() {
+  const d = filtered();
+  const keys = ['sla','onp','pick','pack','qnp'];
+  const stats = {};
+  keys.forEach(k=>{
+    const v = d.map(w=>w[k]).filter(x=>x!=null);
+    stats[k] = {min:Math.min(...v),max:Math.max(...v)};
+  });
+  function cls(w,k,goodDir='h') {
+    const v=w[k]; if(v==null) return 'muted';
+    const {min,max}=stats[k];
+    if(goodDir==='h') return v===max?'best':v===min?'worst':v<min+(max-min)*0.33?'caution':'';
+    return v===min?'best':v===max?'worst':v>min+(max-min)*0.67?'caution':'';
+  }
+  const body = document.getElementById('matrixBody');
+  body.innerHTML = d.map(w=>`<tr>
+    <td>${w.id}</td>
+    <td>${clusterTag(w.cluster)}</td>
+    <td class="s1c ${cls(w,'sla','h')}">${w.sla!=null?w.sla.toFixed(1)+'%':'—'}</td>
+    <td class="${cls(w,'onp','h')}">${w.onp!=null?w.onp.toFixed(1):'—'}</td>
+    <td class="${cls(w,'pick','h')}">${w.pick!=null?w.pick.toFixed(1):'—'}</td>
+    <td class="${cls(w,'pack','h')}">${w.pack!=null?w.pack.toFixed(1):'—'}</td>
+    <td class="s2c ${cls(w,'qnp','h')}">${w.qnp!=null?w.qnp.toFixed(1):'—'}</td>
+    <td style="color:#aaa">100%</td>
+  </tr>`).join('');
+}
+
+// ═══ Render Charts ═══
+function destroyCharts() { Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}}); charts={}; }
+
+const COLORS20 = ['#4285F4','#EA4335','#FBBC04','#34A853','#9334E6','#FF7043','#00BCD4','#8BC34A','#FF5722','#607D8B',
+                  '#3949AB','#D81B60','#00897B','#F4511E','#1E88E5','#43A047','#8E24AA','#039BE5','#E53935','#00ACC1'];
+
+function renderCharts() {
+  destroyCharts();
+  const d = filtered();
+
+  // Bubble: ONP vs SLA, size=QNP inverse
+  const hasBubble = d.filter(w=>w.sla!=null&&w.onp!=null);
+  charts.bubble = new Chart(document.getElementById('bubbleChart'),{
+    type:'bubble',
+    data:{datasets:[{
+      label:'FC',
+      data: hasBubble.map(w=>({x:w.onp,y:w.sla,r:Math.max(5,Math.min(25,(20-Math.min(w.qnp||0,15))*1.2)),lbl:w.id,q:w.qnp})),
+      backgroundColor: hasBubble.map(w=>{const s=score(w);return s>40?'rgba(234,67,53,.75)':s>20?'rgba(251,188,4,.75)':'rgba(52,168,83,.75)';}),
+      borderWidth:1.5,
+      borderColor: hasBubble.map(w=>{const s=score(w);return s>40?'#EA4335':s>20?'#FBBC04':'#34A853';})
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{const d=ctx.raw;return[hasBubble[ctx.dataIndex].id,`ONP: ${d.x.toFixed(1)}`,`Wave SLA: ${d.y.toFixed(1)}%`,`QNP: ${d.q!=null?d.q.toFixed(1):'N/D'}`];}}}},
+      scales:{
+        x:{title:{display:true,text:'ONP (u/h)',font:{size:10}},min:0,max:75},
+        y:{title:{display:true,text:'Wave SLA (%)',font:{size:10}},min:30,max:92,
+          grid:{color:ctx=>ctx.tick.value===80?'rgba(234,67,53,.4)':'#f0f0f0'}}
+      }
+    },
+    plugins:[{id:'bl',afterDatasetsDraw(ch){
+      const ctx=ch.ctx;
+      ch.data.datasets.forEach((ds,di)=>{ds.data.forEach((pt,i)=>{
+        const m=ch.getDatasetMeta(di);const el=m.data[i];if(!el)return;
+        ctx.fillStyle='#1a1a2e';ctx.font='bold 9px system-ui';ctx.textAlign='center';
+        ctx.fillText(pt.lbl||'',el.x,el.y-el.options.radius-3);
+      });});
+    }}]
+  });
+
+  // Productivity grouped bar
+  const hasProd = d.filter(w=>w.pick!=null||w.pack!=null);
+  charts.prod = new Chart(document.getElementById('prodChart'),{
+    type:'bar',
+    data:{labels:hasProd.map(w=>w.id),datasets:[
+      {label:'Picking NP',data:hasProd.map(w=>w.pick),backgroundColor:'rgba(26,26,46,.8)',borderRadius:2},
+      {label:'Packing NP',data:hasProd.map(w=>w.pack),backgroundColor:'rgba(255,230,0,.85)',borderRadius:2}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:9},boxWidth:10}}},
+      scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}},beginAtZero:true}}}
+  });
+
+  // QNP bar
+  const hasQ = d.filter(w=>w.qnp!=null).sort((a,b)=>b.qnp-a.qnp);
+  charts.qnp = new Chart(document.getElementById('qnpChart'),{
+    type:'bar',
+    data:{labels:hasQ.map(w=>w.id),datasets:[{
+      label:'QNP (u/h)',
+      data:hasQ.map(w=>w.qnp),
+      backgroundColor:hasQ.map(w=>w.qnp>=12?'rgba(52,168,83,.8)':w.qnp>=6?'rgba(251,188,4,.8)':'rgba(234,67,53,.75)'),
+      borderRadius:2
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}},beginAtZero:true,
+        grid:{color:ctx=>ctx.tick.value===12?'rgba(52,168,83,.4)':'#f0f0f0'}}}}
+  });
+
+  // SLA horizontal bar
+  const hasSla = d.filter(w=>w.sla!=null).sort((a,b)=>b.sla-a.sla);
+  charts.sla = new Chart(document.getElementById('slaChart'),{
+    type:'bar',
+    data:{labels:hasSla.map(w=>w.id),datasets:[{
+      label:'Wave SLA %',
+      data:hasSla.map(w=>w.sla),
+      backgroundColor:hasSla.map(w=>w.sla>=80?'rgba(52,168,83,.8)':w.sla>=70?'rgba(251,188,4,.8)':'rgba(234,67,53,.75)'),
+      borderRadius:2
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:9}}},y:{min:0,max:100,ticks:{font:{size:9}},
+        grid:{color:ctx=>ctx.tick.value===80?'rgba(234,67,53,.4)':'#f0f0f0'}}}}
+  });
+}
+
+// ═══ Daily Trend View ═══
+function buildFCSelector() {
+  const sel = document.getElementById('fcSelector');
+  const totable = DATA.filter(w=>w.cluster==='Totable');
+  sel.innerHTML = totable.map(w=>`<button class="fc-btn${selectedFCs.includes(w.id)?' on':''}" onclick="toggleFC('${w.id}',this)">${w.id}</button>`).join('') +
+    DATA.filter(w=>w.cluster==='Hybrid').map(w=>`<button class="fc-btn" onclick="toggleFC('${w.id}',this)">${w.id}</button>`).join('') +
+    `<span style="color:#aaa;font-size:10px;align-self:center;margin-left:4px;">+ otros al cargar</span>`;
+}
+
+function toggleFC(id, btn) {
+  if(selectedFCs.includes(id)) {
+    if(selectedFCs.length>1) { selectedFCs=selectedFCs.filter(x=>x!==id); btn.classList.remove('on'); }
+  } else { selectedFCs.push(id); btn.classList.add('on'); }
+}
+
+function setDailyKpi(kpi, btn) {
+  activeDailyKpi = kpi;
+  document.querySelectorAll('#dailyView .chip').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const labels = {'wave_sla':'Wave SLA%','Outbound Net Productivity':'ONP','Picking Net Productivity':'Picking NP','Quality Net Productivity':'Quality NP'};
+  document.getElementById('dailyChartTitle').textContent = `📈 Tendencia Diaria — ${labels[kpi]||kpi}`;
+}
+
+async function loadDailyData() {
+  const loader = document.getElementById('dailyLoader');
+  const canvas = document.getElementById('dailyChart');
+  loader.style.display='block';
+  loader.innerHTML = '⏳ Consultando DSOM... puede tardar 10-20s por FC';
+  canvas.style.display='none';
+  if(dailyChart){try{dailyChart.destroy();}catch(e){} dailyChart=null;}
+
+  try {
+    const allDatasets = [];
+    const colorPalette = ['#EA4335','#4285F4','#FBBC04','#34A853','#9334E6','#FF7043','#00BCD4'];
+    let datesRef = null;
+
+    for(let i=0;i<selectedFCs.length;i++) {
+      const fc = selectedFCs[i];
+      loader.innerHTML = `⏳ Cargando ${fc} (${i+1}/${selectedFCs.length})...`;
+      try {
+        const res = await window.cowork.callMcpTool('mcp__dark-side-of-the-moon__get_operational_trends',{
+          warehouse_id: fc, site_id:'MLM', granularity:'DAY',
+          kpi_names:[activeDailyKpi],
+          start_date:'2026-05-06', end_date:'2026-05-12'
+        });
+        const parsed = typeof res==='string'?JSON.parse(res):res;
+        const rows = parsed.result||[];
+        const fRows = rows.filter(r=>r.kpi_name===activeDailyKpi).sort((a,b)=>a.date_kpi<b.date_kpi?-1:1);
+        if(fRows.length>0) {
+          const dates = fRows.map(r=>r.date_kpi.substring(5,10));
+          if(!datesRef) datesRef=dates;
+          const vals = fRows.map(r=>activeDailyKpi==='wave_sla'?+(r.kpi_value*100).toFixed(1):+(r.kpi_value).toFixed(1));
+          allDatasets.push({label:fc,data:vals,borderColor:colorPalette[i%colorPalette.length],backgroundColor:colorPalette[i%colorPalette.length]+'33',tension:.3,pointRadius:4,pointHoverRadius:6,fill:false});
+        }
+      } catch(e) { console.warn(`Error loading ${fc}:`,e); }
+    }
+
+    if(allDatasets.length===0) { loader.innerHTML='⚠ No se encontraron datos. Verifica la conexión a DSOM.'; return; }
+
+    loader.style.display='none';
+    canvas.style.display='block';
+
+    const yLabel = activeDailyKpi==='wave_sla'?'%':'u/h';
+    const targetLine = activeDailyKpi==='wave_sla'?80:activeDailyKpi==='Picking Net Productivity'?75:null;
+
+    dailyChart = new Chart(canvas,{
+      type:'line',
+      data:{labels:datesRef||['L','M','X','J','V','S','D'],datasets:allDatasets},
+      options:{responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}},
+          annotation:{annotations:targetLine?{target:{type:'line',yMin:targetLine,yMax:targetLine,borderColor:'rgba(234,67,53,.5)',borderWidth:2,borderDash:[5,5],label:{content:`Target ${targetLine}${yLabel}`,enabled:true,position:'end',font:{size:9}}}}:{}}},
+        scales:{
+          x:{title:{display:true,text:'Fecha (May 2026)',font:{size:10}},ticks:{font:{size:10}}},
+          y:{title:{display:true,text:yLabel,font:{size:10}},beginAtZero:false,ticks:{font:{size:10}}}
+        }
+      }
+    });
+  } catch(e) {
+    loader.innerHTML = `⚠ Error conectando a DSOM: ${e.message||e}. <br>Verifica que el MCP de Dark Side of the Moon esté activo.`;
+  }
+}
+
+// ═══ Tab Switch ═══
+function switchTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('weeklyView').className = 'weekly-wrap' + (tab==='semanal'?'':' hide');
+  document.getElementById('dailyView').className = 'daily-wrap' + (tab==='diario'?' show':'');
+  if(tab==='semanal') renderAll();
+}
+
+// ═══ Cluster Filter ═══
+function setCluster(c, btn) {
+  activeCluster = c;
+  document.querySelectorAll('.chip').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderAll();
+}
+
+// ═══ Render All ═══
+function renderAll() { renderPriority(); renderMatrix(); renderCharts(); }
+
+// ═══ Init ═══
+buildFCSelector();
+renderAll();
+</script>
+</body>
+</html>
