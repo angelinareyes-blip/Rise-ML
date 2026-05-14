@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLM Operations Pulse v3</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{color-scheme:light;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F3F3F3;color:#1a1a2e;font-size:12px;}
+.hdr{background:#1a1a2e;padding:10px 20px;display:flex;align-items:center;gap:10px;}
+.hdr-logo{width:32px;height:32px;background:#FFE600;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#1a1a2e;flex-shrink:0;}
+.hdr h1{color:#fff;font-size:16px;font-weight:700;}
+.hdr p{color:#aaa;font-size:10px;margin-top:1px;}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.w-badge{background:#FFE600;color:#1a1a2e;font-weight:800;font-size:11px;padding:4px 10px;border-radius:20px;}
+.src-badge{background:#ffffff1a;color:#ccc;font-size:10px;padding:3px 8px;border-radius:20px;}
+/* TABS */
+.tabs-wrap{background:#fff;border-bottom:2px solid #FFE600;overflow-x:auto;white-space:nowrap;}
+.tabs{display:inline-flex;padding:0 16px;gap:0;min-width:100%;}
+.tab{padding:9px 14px;font-size:12px;font-weight:600;color:#888;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap;}
+.tab:hover{color:#1a1a2e;}
+.tab.active{color:#1a1a2e;border-bottom-color:#FFE600;}
+.tabs-right{margin-left:auto;display:flex;align-items:center;padding:0 12px;font-size:10px;color:#aaa;white-space:nowrap;}
+/* FILTERS */
+.filters{background:#f8f8f8;border-bottom:1px solid #e8e8e8;padding:7px 20px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.fl{font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.4px;}
+.chip{background:#fff;border:1px solid #ddd;border-radius:20px;padding:3px 10px;font-size:10px;cursor:pointer;font-weight:600;transition:all .12s;}
+.chip:hover{border-color:#1a1a2e;}
+.chip.on{background:#1a1a2e;color:#FFE600;border-color:#1a1a2e;}
+.loading-bar{height:3px;background:linear-gradient(90deg,#FFE600 0%,#C9DAF8 50%,#FFE600 100%);background-size:200%;animation:shimmer 1.5s infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* MAIN */
+.main{padding:14px 18px;max-width:1600px;margin:0 auto;}
+.section{display:none;}.section.active{display:block;}
+/* KPI CARDS */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.cards-5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;}
+.card{background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #C9DAF8;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.card.r{border-color:#EA4335;}.card.g{border-color:#34A853;}.card.a{border-color:#FBBC04;}.card.b{border-color:#C9DAF8;}.card.y{border-color:#FFE600;}
+.card .lbl{font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.card .val{font-size:20px;font-weight:800;color:#1a1a2e;line-height:1.1;margin-top:2px;}
+.card .sub{font-size:10px;color:#aaa;margin-top:2px;line-height:1.4;}
+.card .dlt{font-size:10px;font-weight:700;margin-top:2px;}
+.bad{color:#EA4335;}.ok{color:#34A853;}.warn{color:#FBBC04;}
+/* PANELS */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+.panel{background:#fff;border-radius:8px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:10px;}
+.panel h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.panel h2 .bdg{background:#F3F3F3;padding:2px 6px;border-radius:6px;font-size:9px;color:#888;}
+.nd-note{background:#FEF9C3;border:1px solid #FBBC04;border-radius:6px;padding:8px 12px;font-size:11px;color:#7D4700;margin-bottom:10px;}
+/* ALERTS */
+.alerts{margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.alrt{display:flex;gap:8px;padding:8px 10px;border-radius:6px;align-items:flex-start;}
+.alrt.cr{background:#FEE2E2;border-left:3px solid #EA4335;}
+.alrt.wn{background:#FEF9C3;border-left:3px solid #FBBC04;}
+.alrt.if{background:#DBEAFE;border-left:3px solid #3B82F6;grid-column:1/-1;}
+.alrt-ico{font-size:13px;flex-shrink:0;margin-top:1px;}
+.alrt-txt{font-size:10px;line-height:1.5;}
+.alrt-txt strong{font-weight:700;}
+/* PRIORITY TABLE */
+.ptbl{width:100%;border-collapse:collapse;font-size:11px;}
+.ptbl th{text-align:left;padding:5px 7px;background:#1a1a2e;color:#FFE600;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+.ptbl td{padding:5px 7px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.ptbl tr:hover td{background:#fafafa;}
+.ptbl tr:last-child td{border:none;}
+.rk{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:9px;font-weight:800;}
+.rk1{background:#EA4335;color:#fff;}.rk2{background:#FF6B35;color:#fff;}.rk3{background:#FBBC04;color:#1a1a2e;}.rk4{background:#eee;color:#666;}
+.fc{font-weight:700;font-size:11px;}
+.ctag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:9px;font-weight:600;margin-left:2px;}
+.tt{background:#C9DAF8;color:#1a1a2e;}.th{background:#D5F5E3;color:#1a1a2e;}.ts{background:#FFE600;color:#1a1a2e;}.tm{background:#E8D5F5;color:#1a1a2e;}.to{background:#eee;color:#666;}.tic{background:#FFDDD2;color:#1a1a2e;}
+/* MATRIX */
+.mtx-wrap{overflow-x:auto;margin-top:4px;}
+.mtx{width:100%;border-collapse:collapse;font-size:11px;}
+.mtx th{padding:5px 6px;background:#1a1a2e;color:#FFE600;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:.2px;white-space:nowrap;border-right:1px solid #2a2a3e;}
+.mtx td{padding:5px 6px;border-bottom:1px solid #f2f2f2;border-right:1px solid #f8f8f8;white-space:nowrap;}
+.mtx td:first-child{font-weight:700;background:#fafafa;position:sticky;left:0;z-index:1;}
+.mtx tr:hover td{background:#FFF9CC!important;}
+.best{background:#D5F5E3!important;color:#137333;font-weight:800;}
+.worst{background:#FEE2E2!important;color:#B91C1C;font-weight:800;}
+.caution{background:#FEF9C3;color:#7D4700;}
+.muted{color:#bbb;font-style:italic;}
+/* DAILY */
+.fc-selector{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.fc-btn{background:#fff;border:1px solid #ddd;border-radius:20px;padding:3px 10px;font-size:10px;cursor:pointer;font-weight:600;}
+.fc-btn.on{background:#1a1a2e;color:#FFE600;border-color:#1a1a2e;}
+.loader{text-align:center;padding:30px;color:#aaa;font-size:12px;}
+.footer{text-align:center;padding:12px;color:#bbb;font-size:10px;margin-top:4px;}
+/* HBAR shortcut */
+canvas{max-height:350px;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-logo">ML</div>
+  <div><h1>MLM Operations Pulse</h1><p>Red México — 21 Fulfillment Centers · Todas las operaciones</p></div>
+  <div class="hdr-right">
+    <span class="src-badge">DSOM · BigQuery · Datos verificados</span>
+    <span class="w-badge">W20 WTD · 2026</span>
+  </div>
+</div>
+<div id="loadingBar" class="loading-bar" style="display:none;"></div>
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('resumen',this)">📊 Resumen</div>
+    <div class="tab" onclick="switchTab('servicio',this)">🚚 Servicio</div>
+    <div class="tab" onclick="switchTab('prod_ob',this)">⚡ Prod. Outbound</div>
+    <div class="tab" onclick="switchTab('prod_ib',this)">📥 Prod. Inbound</div>
+    <div class="tab" onclick="switchTab('tiempos',this)">⏱️ EIT / Ocioso</div>
+    <div class="tab" onclick="switchTab('flow',this)">🌊 Flow & Parámetros</div>
+    <div class="tab" onclick="switchTab('calidad',this)">🔬 Calidad</div>
+    <div class="tab" onclick="switchTab('personas',this)">👥 Personas</div>
+    <div class="tab" onclick="switchTab('diario',this)">📈 Tendencia Diaria</div>
+    <div class="tabs-right" id="periodLabel">⏱ W20 WTD Dom 10–Jue 14 May · datos reales DSOM</div>
+  </div>
+</div>
+
+<div class="filters">
+  <span class="fl">Cluster:</span>
+  <button class="chip on" onclick="setCluster('all',this)">Todos</button>
+  <button class="chip" onclick="setCluster('Totable',this)">Totable</button>
+  <button class="chip" onclick="setCluster('Hybrid',this)">Hybrid</button>
+  <button class="chip" onclick="setCluster('Non-Totable',this)">Non-Totable</button>
+  <button class="chip" onclick="setCluster('Super',this)">Super</button>
+  <button class="chip" onclick="setCluster('Metro',this)">Metro</button>
+  <button class="chip" onclick="setCluster('Intra-City',this)">Intra-City</button>
+</div>
+
+<div class="main">
+
+<!-- ═══ RESUMEN ═══ -->
+<div id="sec-resumen" class="section active">
+  <div class="cards-5" id="resumen-cards">
+    <div class="card a"><div class="lbl">SLA OB — Prom. Red</div><div class="val" id="r-ob">—</div><div class="sub" id="r-ob-sub">cargando…</div><div class="dlt warn">Target: ≥95%</div></div>
+    <div class="card r"><div class="lbl">OOT+BL OB — Prom. Red</div><div class="val" id="r-oot">—</div><div class="sub" id="r-oot-sub">cargando…</div><div class="dlt bad">Target: ≥95%</div></div>
+    <div class="card b"><div class="lbl">SLA IB — Prom. Red</div><div class="val" id="r-sla">—</div><div class="sub" id="r-sla-sub">cargando…</div><div class="dlt">Target: ≥99%</div></div>
+    <div class="card r"><div class="lbl">ONP — Mejor Totable</div><div class="val" id="r-onp">—</div><div class="sub" id="r-onp-sub">cargando…</div><div class="dlt bad">u/h</div></div>
+    <div class="card b"><div class="lbl">INP — Prom. Red</div><div class="val" id="r-inp">—</div><div class="sub" id="r-inp-sub">cargando…</div><div class="dlt">u/h inbound</div></div>
+  </div>
+  <div class="alerts" id="resumen-alerts">
+    <div class="alrt cr"><span class="alrt-ico">🔴</span><div class="alrt-txt"><strong>MXCD09 — SLA OB 90.3% + OOT+BL 90.4%:</strong> Doble brecha en servicio outbound (#14 red). IDLE pick 22.5%, RTW buffer 217K u. 28.8% new hires, antigüedad 190d. Requiere intervención inmediata CIE.</div></div>
+    <div class="alrt cr"><span class="alrt-ico">🔴</span><div class="alrt-txt"><strong>MXCD14 — SLA IB 79.7% (peor red):</strong> SLA Inbound crítico, EIT packing 31.1% (#19), Ocioso packing 68.9%. Mayor IDLE packing de la red y peor SLA IB — doble palanca de mejora urgente.</div></div>
+    <div class="alrt wn"><span class="alrt-ico">🟡</span><div class="alrt-txt"><strong>MXCD02 — SLA OB 93.9% + OOT 93.6%:</strong> Automation+Sorter pero SLA OB bajo target. Pick NP excelente (80.2 #3), QNP #2. RTW buffer 123K u. Desbalance productividad vs. servicio — foco en wave management.</div></div>
+    <div class="alrt wn"><span class="alrt-ico">🟡</span><div class="alrt-txt"><strong>MXCD05 — SLA OB 90.6% + OOT 88.3%:</strong> Non-Totable con mayor brecha OOT de la red. ONP 14.7 u/h (#20 red). EIT pick 66.6% (#20). Prioridad de revisión proceso outbound.</div></div>
+    <div class="alrt if"><span class="alrt-ico">📊</span><div class="alrt-txt"><strong>Nota metodológica:</strong> %waves_productivas sólo aplica a FCs con WMS waves (Totable/Hybrid) — visible en tab Flow. Turnover y % Ausentismo no disponibles en DSOM (requieren HR system). % RR, UFF, IMAS, KMs/pickup: no localizados en catálogo DSOM.</div></div>
+  </div>
+  <div class="row2">
+    <div class="panel">
+      <h2>🎯 Tabla de Prioridades CIE <span class="bdg">Score = brecha × peso · ordenado por urgencia</span></h2>
+      <div style="overflow-y:auto;max-height:320px;">
+        <table class="ptbl" id="priorityTbl"><thead><tr><th>#</th><th>FC</th><th>SLA OB</th><th>OOT+BL</th><th>SLA IB</th><th>ONP</th><th>INP</th><th>EIT Pick</th><th>Score</th></tr></thead><tbody id="priorityBody"></tbody></table>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>🔵 Mapa Productividad: ONP vs INP <span class="bdg">Tamaño = Pick NP</span></h2>
+      <canvas id="bubbleChart1" height="200"></canvas>
+      <p style="font-size:9px;color:#aaa;margin-top:4px;">X = OBNP (u/h) · Y = IBNP (u/h) · Línea roja = targets orientativos</p>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="panel" style="grid-column:1/-1;">
+      <h2>🎯 Mapa Servicio: SLA OB vs OOT+BL <span class="bdg">Tamaño = brecha SLA IB</span></h2>
+      <canvas id="bubbleChart2" height="160"></canvas>
+      <p style="font-size:9px;color:#aaa;margin-top:4px;">X = SLA OB % · Y = OOT+BL % · Cuadrante ideal = arriba a la derecha (≥95%, ≥95%) · Burbuja mayor = mayor brecha SLA IB</p>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>📋 Full FC Matrix — KPIs principales W19 WTD</h2>
+    <div class="mtx-wrap"><table class="mtx"><thead><tr>
+      <th>FC</th><th>Cluster</th>
+      <th>Wave SLA%</th><th>SLA OB%</th><th>OOT+BL%</th><th>SLA IB%</th>
+      <th>ONP</th><th>Pick NP</th><th>Pack NP</th><th>QNP</th>
+      <th>INP</th>
+      <th>EIT Pick%</th><th>Ocio Pick%</th><th>EIT Pack%</th><th>Ocio Pack%</th>
+      <th>RTW Buf</th><th>%Waves</th><th>u/Tote</th><th>P2S%</th>
+      <th>Corr NP</th><th>IBAudit NP</th><th>CC NP</th>
+      <th>%NewHire</th><th>Ant(d)</th>
+    </tr></thead><tbody id="matrixBody"></tbody></table></div>
+    <p style="font-size:9px;color:#aaa;margin-top:6px;">DSOM get_network_summary W19 WTD · Verde=mejor · Rojo=peor · Amarillo=bajo target · —=sin dato</p>
+  </div>
+</div>
+
+<!-- ═══ SERVICIO ═══ -->
+<div id="sec-servicio" class="section">
+  <div class="cards-5">
+    <div class="card r"><div class="lbl">Wave SLA Prom.</div><div class="val" id="s-wave">—</div><div class="sub">Target ≥80% · Best MXCD14</div><div class="dlt bad">Picking waves completadas en SLA</div></div>
+    <div class="card a"><div class="lbl">SLA_OB Prom.</div><div class="val" id="s-ob">—</div><div class="sub">% pedidos OB entregados en SLA</div><div class="dlt warn">Target ≥95%</div></div>
+    <div class="card r"><div class="lbl">OOT+BL Prom.</div><div class="val" id="s-oot">—</div><div class="sub">Incluyendo backlog de días anteriores</div><div class="dlt bad">Target ≥95%</div></div>
+    <div class="card b"><div class="lbl">SLA IB Backlog Prom.</div><div class="val" id="s-ib">—</div><div class="sub">% unidades IB procesadas en SLA</div><div class="dlt">Mayoría red ≥99%</div></div>
+    <div class="card r"><div class="lbl">FCs bajo Wave SLA 70%</div><div class="val" id="s-below70">—</div><div class="sub">de 21 total</div><div class="dlt bad">Prioridad de atención</div></div>
+  </div>
+  <div class="row2">
+    <div class="panel"><h2>🌊 Wave SLA % — Ranking Red</h2><canvas id="waveSlaChart" height="280"></canvas></div>
+    <div class="panel"><h2>🚚 SLA_OB % (con backlog) — Ranking Red</h2><canvas id="slaObChart" height="280"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="panel"><h2>🔄 OOT + Backlog % — Ranking Red</h2><canvas id="ootBlChart" height="280"></canvas></div>
+    <div class="panel"><h2>📥 SLA IB Backlog % — Ranking Red</h2><canvas id="slaIbChart" height="280"></canvas></div>
+  </div>
+  <div class="panel">
+    <h2>📋 Tabla de Servicio completa</h2>
+    <div class="mtx-wrap"><table class="mtx"><thead><tr><th>FC</th><th>Cluster</th><th>Wave SLA%</th><th>SLA OB%</th><th>OOT+BL%</th><th>SLA IB Backlog%</th></tr></thead><tbody id="servicioBody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ═══ PROD OB ═══ -->
+<div id="sec-prod_ob" class="section">
+  <div class="cards">
+    <div class="card b"><div class="lbl">ONP — Prom. Red (excluyendo outliers)</div><div class="val" id="po-onp">—</div><div class="sub">u/h outbound</div><div class="dlt">Best: MXCD20 67.5</div></div>
+    <div class="card b"><div class="lbl">Picking NP — Prom.</div><div class="val" id="po-pick">—</div><div class="sub">u/h picking process</div><div class="dlt">Best: MXCD20 125.7</div></div>
+    <div class="card b"><div class="lbl">Packing NP — Prom.</div><div class="val" id="po-pack">—</div><div class="sub">u/h packing process</div><div class="dlt">Best: MXNL01 245.2</div></div>
+    <div class="card r"><div class="lbl">QNP — Prom. Red</div><div class="val" id="po-qnp">—</div><div class="sub">u/h calidad</div><div class="dlt bad">MXCD09 4.3 · MXJC02 1.1</div></div>
+  </div>
+  <div class="row3">
+    <div class="panel"><h2>⚡ ONP (u/h) — Ranking Red</h2><canvas id="onpChart" height="300"></canvas></div>
+    <div class="panel"><h2>📦 Picking NP (u/h)</h2><canvas id="pickChart" height="300"></canvas></div>
+    <div class="panel"><h2>📫 Packing NP (u/h)</h2><canvas id="packChart" height="300"></canvas></div>
+  </div>
+  <div class="nd-note">ℹ️ <strong>Process paths de Picking/Packing:</strong> DSOM publica la NP consolidada por proceso (picking + packing). Sub-paths disponibles en DSOM: <em>Pick_To_Ship, Putwallin, Batchsorter, Hu_Assembly</em>. Consultar tab Flow → % Pick-to-Ship para el mix de process path de picking. Para NP por sub-path individual, usar DSOM get_operational_trends con kpi_name específico.</div>
+  <div class="panel">
+    <h2>🔬 QNP — Quality Net Productivity (u/h auditadas)</h2>
+    <canvas id="qnpChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- ═══ PROD IB ═══ -->
+<div id="sec-prod_ib" class="section">
+  <div class="cards">
+    <div class="card b"><div class="lbl">INP — Mejor red</div><div class="val" id="pi-best">—</div><div class="sub">u/h inbound net prod.</div><div class="dlt">Proceso: Inbound</div></div>
+    <div class="card b"><div class="lbl">Receiving NP — disponible</div><div class="val">✓</div><div class="sub">Ver tabla completa</div><div class="dlt">Sub-process level</div></div>
+    <div class="card b"><div class="lbl">Checkin NP — disponible</div><div class="val">✓</div><div class="sub">Ver tabla completa</div><div class="dlt">Sub-process level</div></div>
+    <div class="card b"><div class="lbl">Putaway NP — disponible</div><div class="val">✓</div><div class="sub">Ver tabla completa</div><div class="dlt">Sub-process level</div></div>
+  </div>
+  <div class="nd-note">⚠️ <strong>Nota DSOM:</strong> Los sub-procesos de Inbound (Receiving, Checkin, Putaway) retornaron "Permission denied" al intentar consultar por FC individual en la sesión anterior. El INP consolidado (nivel 2) sí está disponible. Los valores a continuación son el INP agregado de área "Inbound" nivel 2 por FC.</div>
+  <div class="panel"><h2>📥 INP — Inbound Net Productivity (u/h)</h2><canvas id="inpChart" height="300"></canvas></div>
+  <div class="panel">
+    <h2>📋 INP por FC — W19 WTD</h2>
+    <div class="mtx-wrap"><table class="mtx"><thead><tr><th>FC</th><th>Cluster</th><th>INP (u/h)</th><th>Rank Red</th></tr></thead><tbody id="inpBody"></tbody></table></div>
+    <p style="font-size:9px;color:#aaa;margin-top:6px;">Fuente: DSOM Inbound Net Productivity nivel 2 (area: Inbound). Para sub-procesos (Receiving NP, Checkin NP, Putaway NP) solicitar acceso específico a DSOM team.</p>
+  </div>
+</div>
+
+<!-- ═══ TIEMPOS ═══ -->
+<div id="sec-tiempos" class="section">
+  <div class="cards">
+    <div class="card g"><div class="lbl">EIT Pick — Mejor red</div><div class="val" id="t-eit-pick-best">—</div><div class="sub">% tiempo efectivo picking</div><div class="dlt ok">Mayor = mejor</div></div>
+    <div class="card r"><div class="lbl">Ocioso Pick — Peor red</div><div class="val" id="t-ocio-pick-worst">—</div><div class="sub">% tiempo ocioso picking</div><div class="dlt bad">Menor = mejor</div></div>
+    <div class="card g"><div class="lbl">EIT Pack — Mejor red</div><div class="val" id="t-eit-pack-best">—</div><div class="sub">% tiempo efectivo packing</div><div class="dlt ok">Mayor = mejor</div></div>
+    <div class="card r"><div class="lbl">Ocioso Pack — Peor red</div><div class="val" id="t-ocio-pack-worst">—</div><div class="sub">% tiempo ocioso packing</div><div class="dlt bad">Menor = mejor</div></div>
+  </div>
+  <div class="row2">
+    <div class="panel"><h2>✅ EIT Picking % (mayor = mejor)</h2><canvas id="eitPickChart" height="300"></canvas></div>
+    <div class="panel"><h2>💤 Ocioso Picking % (menor = mejor)</h2><canvas id="ocioPickChart" height="300"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="panel"><h2>✅ EIT Packing % (mayor = mejor)</h2><canvas id="eitPackChart" height="300"></canvas></div>
+    <div class="panel"><h2>💤 Ocioso Packing % (menor = mejor)</h2><canvas id="ocioPackChart" height="300"></canvas></div>
+  </div>
+  <div class="nd-note">ℹ️ <strong>IDLE vs Ocioso:</strong> En DSOM el término es <em>% Ocioso</em> (= tiempo que el operador está logueado pero sin tarea asignada). % Effective Time = tiempo con tarea activa. Los FCs MXCD08 y MXCH02 tienen volúmenes mínimos (outliers). MXCD14 destaca con Ocioso Pack 68.9% — posible bajo volumen / packing manual sin surtido suficiente.</div>
+</div>
+
+<!-- ═══ FLOW ═══ -->
+<div id="sec-flow" class="section">
+  <div class="cards">
+    <div class="card r"><div class="lbl">RTW Buffer 0h — Mayor</div><div class="val" id="f-rtw">217K</div><div class="sub">MXCD09 — unidades esperando 0h</div><div class="dlt bad">Mayor buffer = olas represadas</div></div>
+    <div class="card a"><div class="lbl">%Waves Productivas — Red</div><div class="val" id="f-waves">—</div><div class="sub">Solo FCs con WMS waves (7)</div><div class="dlt warn">Best MXJC01 99.1%</div></div>
+    <div class="card b"><div class="lbl">Avg u/Tote — Mejor</div><div class="val" id="f-tote">27.7</div><div class="sub">MXCD11 — unid promedio por tote</div><div class="dlt">Saturafullness proxy</div></div>
+    <div class="card b"><div class="lbl">% Pick-to-Ship — Mejor</div><div class="val" id="f-p2s">10.1%</div><div class="sub">MXJC02 — process path directo</div><div class="dlt">Totable FCs: prácticamente 0%</div></div>
+  </div>
+  <div class="row2">
+    <div class="panel"><h2>🌊 RTW Buffer 0h — Unidades en espera de ola</h2><canvas id="rtwChart" height="280"></canvas><p style="font-size:9px;color:#aaa;margin-top:4px;">Unidades Ready-to-Wave esperando asignación a ola (0 horas buffer). Mayor = mayor presión en picking.</p></div>
+    <div class="panel"><h2>🎯 % Waves Productivas <span class="bdg">Solo FCs con WMS waves</span></h2><canvas id="wavesChart" height="280"></canvas><p style="font-size:9px;color:#aaa;margin-top:4px;">Non-Totable, Metro, Intra-City: N/A (no usan WMS waves). Mínimo: ≥95%.</p></div>
+  </div>
+  <div class="row2">
+    <div class="panel"><h2>📦 Avg Units per Tote (Saturafullness proxy)</h2><canvas id="toteChart" height="280"></canvas></div>
+    <div class="panel"><h2>🔀 % Pick-to-Ship (process path directo)</h2><canvas id="p2sChart" height="280"></canvas><p style="font-size:9px;color:#aaa;margin-top:4px;">% de unidades que van directo sin consolidación. Non-Totable FCs lideran. MXCD10 = 0% (100% consolidado).</p></div>
+  </div>
+  <div class="nd-note">ℹ️ <strong>Parámetros no disponibles en DSOM:</strong> KMs por pickup, tiempo de consolidación RTW→Sorted, volumetría usada de tote (solo avg units). Para análisis de zonificación y KMs/pickup consultar módulo AXIS o CIE Sketcher.</div>
+</div>
+
+<!-- ═══ CALIDAD ═══ -->
+<div id="sec-calidad" class="section">
+  <div class="cards">
+    <div class="card b"><div class="lbl">QNP — Quality NP</div><div class="val" id="c-qnp">—</div><div class="sub">Prom. red (excl. USTX01)</div><div class="dlt">Auditorías de calidad u/h</div></div>
+    <div class="card b"><div class="lbl">Corrective Count NP</div><div class="val" id="c-corr">—</div><div class="sub">Prom. red</div><div class="dlt">Conteos correctivos u/h</div></div>
+    <div class="card b"><div class="lbl">Inbound Audit NP</div><div class="val" id="c-ibaud">—</div><div class="sub">Prom. red</div><div class="dlt">Auditorías entrada u/h</div></div>
+    <div class="card b"><div class="lbl">Cycle Count NP</div><div class="val" id="c-cc">—</div><div class="sub">Prom. red</div><div class="dlt">Conteos cíclicos u/h</div></div>
+  </div>
+  <div class="nd-note">⚠️ <strong>Métricas no disponibles en DSOM:</strong> % RR (Retrabajo / Reclassification Rate), UFF (Unfulfillable Fulfillment Factor), IMAS (Inbound Material Accuracy Score) — no encontradas en el catálogo de KPIs del DSOM. Confirmar disponibilidad con equipo de Inteligencia de Datos / Looker Studio TEO para estos indicadores de calidad transaccional.</div>
+  <div class="row2">
+    <div class="panel"><h2>🔬 Quality Net Productivity (u/h)</h2><canvas id="qnp2Chart" height="280"></canvas></div>
+    <div class="panel"><h2>🔧 Corrective Count NP (u/h)</h2><canvas id="corrChart" height="280"></canvas></div>
+  </div>
+  <div class="row2">
+    <div class="panel"><h2>📋 Inbound Audit NP (u/h)</h2><canvas id="ibAudChart" height="280"></canvas></div>
+    <div class="panel"><h2>🔄 Cycle Count NP (u/h)</h2><canvas id="ccChart" height="280"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ PERSONAS ═══ -->
+<div id="sec-personas" class="section">
+  <div class="cards">
+    <div class="card r"><div class="lbl">% New Hires — Mayor riesgo</div><div class="val">75.9%</div><div class="sub">MXCD14 — 3/4 del headcount con &lt;90d</div><div class="dlt bad">Alta rotación operativa</div></div>
+    <div class="card a"><div class="lbl">% New Hires — Prom. Red</div><div class="val" id="p-newhire-avg">—</div><div class="sub">FCs reportando en DSOM</div><div class="dlt warn">Target: &lt;25%</div></div>
+    <div class="card g"><div class="lbl">Antigüedad — Mayor</div><div class="val">713d</div><div class="sub">MXCD02 — equipo más maduro</div><div class="dlt ok">~2 años promedio</div></div>
+    <div class="card r"><div class="lbl">Antigüedad — Menor</div><div class="val">6.2d</div><div class="sub">MXPB01 — prácticamente nuevo</div><div class="dlt bad">Riesgo alta curva de aprendizaje</div></div>
+  </div>
+  <div class="nd-note">⚠️ <strong>Métricas no disponibles en DSOM:</strong> <strong>Turnover</strong> y <strong>% Ausentismo</strong> son métricas de RRHH que no se publican en el layer analítico DSOM. Para obtenerlas: (1) Sistema HR / Workday, (2) Reporte People Analytics mensual, (3) Data Studio RRHH MercadoLibre. Contactar al área de People Operations para acceso.</div>
+  <div class="row2">
+    <div class="panel"><h2>👶 % New Hires por FC (menor = mejor)</h2><canvas id="newHireChart" height="280"></canvas><p style="font-size:9px;color:#aaa;margin-top:4px;">New hire = operador con &lt;90 días en el rol. Target red: &lt;25%.</p></div>
+    <div class="panel"><h2>📅 Antigüedad Promedio (días)</h2><canvas id="antChart" height="280"></canvas><p style="font-size:9px;color:#aaa;margin-top:4px;">Mayor antigüedad = equipo más experimentado y estable.</p></div>
+  </div>
+</div>
+
+<!-- ═══ TENDENCIA DIARIA ═══ -->
+<div id="sec-diario" class="section">
+  <div class="alrt if" style="margin-bottom:10px;">
+    <span class="alrt-ico">ℹ️</span>
+    <div class="alrt-txt"><strong>WTD vs Diario:</strong> Las pestañas Resumen, Servicio y Productividad muestran el acumulado de la semana en curso (WTD Dom–Jue). El rendimiento de <em>un día</em> puede ser muy diferente al WTD porque los primeros días de semana (Dom/Lun) suelen tener menor volumen y bajan el promedio. Aquí puedes ver la evolución diaria por FC y KPI.</div>
+  </div>
+  <div class="panel" style="margin-bottom:10px;">
+    <h2>📈 Tendencia diaria — D-14 por FC desde DSOM live</h2>
+    <div class="fc-selector" id="fcSelector"></div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+      <span class="fl">KPI:</span>
+      <button class="chip" onclick="setDailyKpi('SLA_OB',this)">SLA OB%</button>
+      <button class="chip" onclick="setDailyKpi('sla_oot_missed_backlog_included',this)">OOT+BL%</button>
+      <button class="chip" onclick="setDailyKpi('SLA IB Backlog',this)">SLA IB%</button>
+      <button class="chip on" onclick="setDailyKpi('Outbound Net Productivity',this)">ONP</button>
+      <button class="chip" onclick="setDailyKpi('Inbound Net Productivity',this)">INP</button>
+      <button class="chip" onclick="setDailyKpi('Picking Net Productivity',this)">Pick NP</button>
+      <button class="chip" onclick="setDailyKpi('Packing Net Productivity',this)">Pack NP</button>
+      <button class="chip" onclick="setDailyKpi('Quality Net Productivity',this)">QNP</button>
+      <button class="chip" onclick="setDailyKpi('% Effective Time outbound picking',this)">EIT Pick</button>
+      <button class="chip" onclick="setDailyKpi('% Ocioso outbound picking',this)">Ocioso Pick</button>
+      <button class="chip" onclick="setDailyKpi('% Effective Time outbound packing',this)">EIT Pack</button>
+    </div>
+    <div style="text-align:center;margin-bottom:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="loadDailyData(14)" style="background:#FFE600;border:none;padding:7px 18px;border-radius:20px;font-weight:700;cursor:pointer;font-size:12px;">🔄 Cargar últimos 14 días</button>
+      <button onclick="loadDailyData(7)" style="background:#1a1a2e;color:#FFE600;border:none;padding:7px 18px;border-radius:20px;font-weight:700;cursor:pointer;font-size:12px;">📅 Últimos 7 días</button>
+      <button id="btnAyer" onclick="loadDailyData(1)" style="background:#34A853;color:#fff;border:none;padding:7px 18px;border-radius:20px;font-weight:700;cursor:pointer;font-size:12px;">⚡ Solo Ayer</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h2 id="dailyChartTitle">📈 Tendencia Diaria</h2>
+    <div id="dailyLoader" class="loader">Selecciona FCs arriba y haz click en <strong>Cargar desde DSOM</strong></div>
+    <canvas id="dailyChart" height="280" style="display:none;"></canvas>
+  </div>
+</div>
+
+</div><!-- end main -->
+<div class="footer">MLM Operations Pulse v3 · CIE MercadoLibre México · Datos: Dark Side of the Moon (DSOM) · W19 2026</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  DATOS REALES DSOM — W20 WTD (Dom 10-May → Jue 14-May 2026)
+//  Fuente: Dark Side of the Moon / BigQuery MLM
+//  Nota: WTD promedia días de la semana corriente (Sun-Thu).
+//  Para ver datos de UN DÍA específico usar pestaña Tendencia Diaria.
+// ════════════════════════════════════════════════════════════
+const DATA = [
+  // sla_ob=SLA_OB%, oot_bl=OOT+BL backlog%, sla_ib=SLA IB Backlog%
+  // onp,pick,pack,qnp,inp = productividades (u/h)
+  // eit_pick,ocio_pick,eit_pack,ocio_pack = tiempos %
+  // rtw=RTW buffer 0h, waves=%waves_productivas, tote=avg_units_per_tote, p2s=%pick_to_ship%
+  // corr=Corrective_Count NP, ibaud=Inbound_Audit NP, cc=Cycle_Count NP
+  // nh=%new_hires%, ant=avg_antiguedad days
+  // wave_sla=Wave SLA% (visible en tab Servicio/Flow)
+  {id:'MXCD02',cluster:'Totable',   wave_sla:56.3,sla_ob:93.9,oot_bl:93.6,sla_ib:99.97, onp:36.4,pick:80.2,pack:167.2,qnp:18.2,inp:131.5, eit_pick:79.4,ocio_pick:20.6,eit_pack:79.4,ocio_pack:20.6, rtw:123867,waves:null, tote:10.72,p2s:0.22, corr:31.8,ibaud:127.8,cc:399.2, nh:20.8,ant:713.4},
+  {id:'MXCD05',cluster:'Non-Totable',wave_sla:52.1,sla_ob:90.6,oot_bl:88.3,sla_ib:99.40, onp:14.7,pick:40.6,pack:124.1,qnp:7.7, inp:36.3,  eit_pick:66.6,ocio_pick:33.4,eit_pack:75.1,ocio_pack:24.9, rtw:35833, waves:null, tote:24.83,p2s:6.16, corr:15.9,ibaud:71.7, cc:294.8, nh:20.3,ant:457.2},
+  {id:'MXCD06',cluster:'Super',     wave_sla:77.0,sla_ob:89.6,oot_bl:87.7,sla_ib:99.78, onp:33.1,pick:77.4,pack:132.2,qnp:17.3,inp:108.4, eit_pick:78.2,ocio_pick:21.8,eit_pack:67.9,ocio_pack:32.1, rtw:163303,waves:72.3, tote:12.97,p2s:0.86, corr:47.5,ibaud:223.6,cc:469.5, nh:33.4,ant:382.8},
+  {id:'MXCD07',cluster:'Totable',   wave_sla:64.4,sla_ob:96.4,oot_bl:96.3,sla_ib:99.98, onp:39.6,pick:60.7,pack:240.3,qnp:11.4,inp:132.6, eit_pick:79.2,ocio_pick:20.8,eit_pack:85.2,ocio_pack:14.8, rtw:31134, waves:93.0, tote:12.60,p2s:0.39, corr:19.4,ibaud:113.4,cc:422.4, nh:39.0,ant:390.1},
+  {id:'MXCD08',cluster:'Otros',     wave_sla:36.7,sla_ob:null, oot_bl:null, sla_ib:null,  onp:7.2, pick:27.7,pack:9.9,  qnp:0.6, inp:null,  eit_pick:51.9,ocio_pick:48.1,eit_pack:23.6,ocio_pack:76.4, rtw:null,  waves:null, tote:null, p2s:3.50, corr:16.6,ibaud:227.8,cc:15.8,  nh:null, ant:null},
+  {id:'MXCD09',cluster:'Totable',   wave_sla:69.2,sla_ob:90.3,oot_bl:90.4,sla_ib:98.98, onp:32.1,pick:64.3,pack:164.3,qnp:4.3, inp:138.5, eit_pick:77.5,ocio_pick:22.5,eit_pack:76.5,ocio_pack:23.5, rtw:217497,waves:80.3, tote:11.64,p2s:0.44, corr:18.1,ibaud:99.4, cc:353.2, nh:28.8,ant:190.4},
+  {id:'MXCD10',cluster:'Totable',   wave_sla:73.5,sla_ob:91.5,oot_bl:90.6,sla_ib:99.15, onp:34.2,pick:70.6,pack:172.6,qnp:11.6,inp:159.1, eit_pick:76.0,ocio_pick:24.0,eit_pack:73.4,ocio_pack:26.6, rtw:200711,waves:83.7, tote:11.54,p2s:0.00, corr:18.6,ibaud:113.6,cc:290.5, nh:28.5,ant:167.2},
+  {id:'MXCD11',cluster:'Non-Totable',wave_sla:72.0,sla_ob:91.6,oot_bl:88.3,sla_ib:99.999,onp:20.4,pick:48.5,pack:139.1,qnp:7.4, inp:71.6,  eit_pick:74.7,ocio_pick:25.3,eit_pack:74.4,ocio_pack:25.6, rtw:23321, waves:null, tote:27.70,p2s:8.45, corr:27.2,ibaud:110.7,cc:218.7, nh:34.0,ant:277.8},
+  {id:'MXCD12',cluster:'Non-Totable',wave_sla:70.4,sla_ob:91.8,oot_bl:88.8,sla_ib:100.0, onp:20.7,pick:43.6,pack:171.9,qnp:3.6, inp:65.6,  eit_pick:75.0,ocio_pick:25.0,eit_pack:76.3,ocio_pack:23.7, rtw:26049, waves:null, tote:27.56,p2s:8.37, corr:11.2,ibaud:75.7, cc:292.5, nh:30.3,ant:169.0},
+  {id:'MXCD14',cluster:'Non-Totable',wave_sla:83.9,sla_ob:84.1,oot_bl:84.0,sla_ib:79.69, onp:10.6,pick:23.3,pack:37.8, qnp:8.7, inp:35.1,  eit_pick:66.1,ocio_pick:33.9,eit_pack:31.1,ocio_pack:68.9, rtw:10292, waves:null, tote:11.67,p2s:5.01, corr:44.9,ibaud:141.7,cc:262.5, nh:75.9,ant:22.3},
+  {id:'MXCD20',cluster:'Intra-City', wave_sla:53.3,sla_ob:78.3,oot_bl:78.3,sla_ib:99.99, onp:67.5,pick:125.7,pack:190.3,qnp:3.2, inp:176.6, eit_pick:91.8,ocio_pick:8.2, eit_pack:91.2,ocio_pack:8.8,  rtw:132,   waves:null, tote:2.29, p2s:null, corr:29.2,ibaud:124.7,cc:50.3,  nh:60.7,ant:31.6},
+  {id:'MXGT01',cluster:'Hybrid',    wave_sla:76.2,sla_ob:91.3,oot_bl:90.8,sla_ib:87.56, onp:32.4,pick:70.7,pack:171.6,qnp:9.4, inp:114.8, eit_pick:77.2,ocio_pick:22.8,eit_pack:79.9,ocio_pack:20.1, rtw:163116,waves:85.8, tote:11.22,p2s:1.71, corr:15.9,ibaud:117.5,cc:363.7, nh:26.6,ant:272.0},
+  {id:'MXJC01',cluster:'Totable',   wave_sla:72.9,sla_ob:94.3,oot_bl:94.2,sla_ib:99.84, onp:35.4,pick:78.9,pack:204.7,qnp:13.6,inp:112.9, eit_pick:80.1,ocio_pick:19.9,eit_pack:80.1,ocio_pack:19.9, rtw:109366,waves:99.1, tote:11.81,p2s:0.07, corr:23.2,ibaud:129.8,cc:339.9, nh:33.3,ant:548.1},
+  {id:'MXJC02',cluster:'Non-Totable',wave_sla:52.5,sla_ob:87.2,oot_bl:87.9,sla_ib:100.0, onp:22.6,pick:58.3,pack:151.1,qnp:1.1, inp:74.0,  eit_pick:86.2,ocio_pick:13.8,eit_pack:81.7,ocio_pack:18.3, rtw:18803, waves:null, tote:26.46,p2s:10.12,corr:19.9,ibaud:119.7,cc:203.1, nh:33.6,ant:51.2},
+  {id:'MXNL01',cluster:'Hybrid',    wave_sla:77.9,sla_ob:94.2,oot_bl:93.9,sla_ib:99.78, onp:36.6,pick:78.3,pack:245.2,qnp:14.8,inp:138.2, eit_pick:80.5,ocio_pick:19.5,eit_pack:83.8,ocio_pack:16.2, rtw:57081, waves:null, tote:11.50,p2s:0.45, corr:46.4,ibaud:157.8,cc:343.4, nh:30.4,ant:512.4},
+  {id:'MXPB01',cluster:'Otros',     wave_sla:82.3,sla_ob:80.7,oot_bl:61.2,sla_ib:91.83, onp:17.2,pick:37.4,pack:72.0, qnp:0.5, inp:41.5,  eit_pick:72.7,ocio_pick:27.3,eit_pack:65.5,ocio_pack:34.5, rtw:462,   waves:0,   tote:5.05, p2s:null, corr:5.8, ibaud:59.9, cc:15.9,  nh:98.0,ant:6.2},
+  {id:'MXSO01',cluster:'Metro',     wave_sla:58.0,sla_ob:97.4,oot_bl:97.5,sla_ib:100.0, onp:40.9,pick:75.4,pack:157.4,qnp:10.7,inp:110.1, eit_pick:82.9,ocio_pick:17.1,eit_pack:82.5,ocio_pack:17.5, rtw:519,   waves:null, tote:5.92, p2s:null, corr:37.5,ibaud:110.9,cc:427.0, nh:38.6,ant:152.5},
+  {id:'MXYU01',cluster:'Hybrid',    wave_sla:76.6,sla_ob:92.0,oot_bl:90.4,sla_ib:99.99, onp:36.7,pick:69.8,pack:206.9,qnp:8.0, inp:131.2, eit_pick:80.3,ocio_pick:19.7,eit_pack:84.7,ocio_pack:15.3, rtw:67354, waves:78.9, tote:11.39,p2s:2.17, corr:29.9,ibaud:104.5,cc:299.8, nh:19.1,ant:469.5},
+  {id:'USTX01',cluster:'Otros',     wave_sla:46.3,sla_ob:75.9,oot_bl:74.6,sla_ib:99.90, onp:49.7,pick:99.9,pack:149.8,qnp:56.3,inp:148.4, eit_pick:74.3,ocio_pick:25.7,eit_pack:84.9,ocio_pack:15.1, rtw:46141, waves:0,   tote:6.13, p2s:0.60, corr:928.8,ibaud:418.1,cc:746.8, nh:26.1,ant:136.2},
+  {id:'MXBC01',cluster:'Otros',     wave_sla:37.3,sla_ob:94.4,oot_bl:94.0,sla_ib:94.26, onp:36.4,pick:71.7,pack:150.7,qnp:2.6, inp:91.0,  eit_pick:76.7,ocio_pick:23.3,eit_pack:81.4,ocio_pack:18.6, rtw:332,   waves:0,   tote:6.16, p2s:null, corr:11.9,ibaud:74.9, cc:356.5, nh:32.0,ant:41.4},
+  {id:'MXCH02',cluster:'Otros',     wave_sla:null, sla_ob:100.0,oot_bl:100.0,sla_ib:100.0,onp:0.1,pick:1.7, pack:0.3,  qnp:3.1, inp:17.6,  eit_pick:28.8,ocio_pick:71.2,eit_pack:24.0,ocio_pack:75.9, rtw:44,    waves:0,   tote:null, p2s:null, corr:null,ibaud:78.2, cc:53.2,  nh:100.0,ant:7.4},
+];
+
+const CLUSTER_COLORS = {
+  'Totable':'#C9DAF8','Hybrid':'#D5F5E3','Non-Totable':'#FFE4B5',
+  'Super':'#FFE600','Metro':'#E8D5F5','Intra-City':'#FFDDD2','Otros':'#eee'
+};
+const CLUSTER_CSS = {
+  'Totable':'tt','Hybrid':'th','Non-Totable':'to','Super':'ts','Metro':'tm','Intra-City':'tic','Otros':'to'
+};
+
+// State
+let activeCluster = 'all';
+let activeSection = 'resumen';
+let activeDailyKpi = 'Outbound Net Productivity';
+let selectedFCs = ['MXCD07','MXCD09','MXCD10','MXJC01','MXCD02'];
+let charts = {};
+let dailyChart = null;
+
+// ════ Filtered data ════
+function fd() {
+  if (activeCluster === 'all') return DATA;
+  return DATA.filter(d => d.cluster === activeCluster);
+}
+
+// ════ Utility ════
+function fmt(v, dec=1) { return v != null ? v.toFixed(dec) : '—'; }
+function fmtPct(v) { return v != null ? v.toFixed(1)+'%' : '—'; }
+function avg(arr, key) {
+  const vals = arr.map(d=>d[key]).filter(v=>v!=null && !isNaN(v));
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+function maxFC(arr, key) { return arr.filter(d=>d[key]!=null).sort((a,b)=>b[key]-a[key])[0]; }
+function minFC(arr, key) { return arr.filter(d=>d[key]!=null).sort((a,b)=>a[key]-b[key])[0]; }
+
+function colorBar(val, good, bad) {
+  if (val == null) return '#ddd';
+  const ratio = (val - bad) / (good - bad);
+  const r = ratio < 0 ? 0 : ratio > 1 ? 0 : Math.round(255*(1-ratio));
+  const g = ratio < 0 ? 0 : ratio > 1 ? 180 : Math.round(180*ratio);
+  return `rgb(${r},${g},80)`;
+}
+
+function colorPct(val, best, worst, inverse=false) {
+  if (val == null) return '';
+  if (inverse) {
+    if (val <= best) return 'best';
+    if (val >= worst) return 'worst';
+    if (val > best*1.3) return 'caution';
+  } else {
+    if (val >= best) return 'best';
+    if (val <= worst) return 'worst';
+    if (val < best*0.85) return 'caution';
+  }
+  return '';
+}
+
+function score(w) {
+  let s = 0;
+  if (w.sla_ob!=null)   s += Math.max(0, 95 - w.sla_ob)  * 2.5;  // SLA OB peso alto
+  if (w.oot_bl!=null)   s += Math.max(0, 95 - w.oot_bl)  * 2.0;  // OOT+BL
+  if (w.sla_ib!=null)   s += Math.max(0, 98 - w.sla_ib)  * 1.5;  // SLA IB
+  if (w.onp!=null)      s += Math.max(0, 40 - w.onp)     * 0.3;
+  if (w.inp!=null)      s += Math.max(0, 120- w.inp)      * 0.1;
+  if (w.eit_pick!=null) s += Math.max(0, 80 - w.eit_pick) * 0.4;
+  if (w.ocio_pick!=null) s += w.ocio_pick                 * 0.2;
+  if (w.qnp!=null)      s += Math.max(0, 12 - w.qnp)     * 0.4;
+  return Math.round(s * 10) / 10;
+}
+
+// ════ CHART helpers ════
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function makeHBar(id, data, label, colorFn, suffix='', opts={}) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const sorted = data.filter(d=>d[1]!=null).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(d=>d[0]);
+  const vals   = sorted.map(d=>d[1]);
+  const colors = opts.invertColor
+    ? vals.map(v=>v >= 80 ? '#34A853' : v >= 65 ? '#FBBC04' : '#EA4335')
+    : vals.map((v,i)=>colorFn ? colorFn(v,i,sorted[i][2]) : '#C9DAF8');
+  charts[id] = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label, data:vals, backgroundColor:colors, borderRadius:3, borderSkipped:false}]},
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.x.toFixed(1)}${suffix}`}}},
+      scales:{
+        x:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}},
+          ...(opts.min!=null?{min:opts.min}:{}),
+          ...(opts.max!=null?{max:opts.max}:{})},
+        y:{ticks:{font:{size:10},color:'#555'}}
+      }
+    }
+  });
+}
+
+function makeGroupedBar(id, datasets, labels) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets},
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{position:'top',labels:{font:{size:10}}}},
+      scales:{x:{ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}
+    }
+  });
+}
+
+// ════ RENDER functions ════
+function renderResumen() {
+  const d = fd();
+  const avgOb  = avg(d,'sla_ob');
+  const avgOot = avg(d,'oot_bl');
+  const avgIb  = avg(d,'sla_ib');
+  const bestTotable = d.filter(x=>x.cluster==='Totable').sort((a,b)=>b.onp-a.onp)[0];
+  const avgInp = avg(d.filter(x=>x.inp!=null),'inp');
+
+  document.getElementById('r-ob').innerHTML = avgOb!=null?avgOb.toFixed(1)+'<span style="font-size:13px">%</span>':'—';
+  document.getElementById('r-ob-sub').textContent = 'Best: '+maxFC(d,'sla_ob')?.id+' '+fmtPct(maxFC(d,'sla_ob')?.sla_ob)+' · Worst: '+minFC(d,'sla_ob')?.id;
+  document.getElementById('r-oot').innerHTML = avgOot!=null?avgOot.toFixed(1)+'<span style="font-size:13px">%</span>':'—';
+  document.getElementById('r-oot-sub').textContent = 'Best: '+maxFC(d,'oot_bl')?.id+' · Worst: '+minFC(d,'oot_bl')?.id+' '+fmtPct(minFC(d,'oot_bl')?.oot_bl);
+  document.getElementById('r-sla').innerHTML = avgIb!=null?avgIb.toFixed(2)+'<span style="font-size:13px">%</span>':'—';
+  document.getElementById('r-sla-sub').textContent = 'Worst IB: '+minFC(d,'sla_ib')?.id+' '+fmtPct(minFC(d,'sla_ib')?.sla_ib);
+  document.getElementById('r-onp').textContent = bestTotable ? bestTotable.onp : '—';
+  document.getElementById('r-onp-sub').textContent = (bestTotable?.id||'') + ' · Prom. Totable: '+(avg(d.filter(x=>x.cluster==='Totable'),'onp')?.toFixed(1)||'—');
+  document.getElementById('r-inp').innerHTML = avgInp!=null?avgInp.toFixed(1)+'<span style="font-size:10px"> u/h</span>':'—';
+  document.getElementById('r-inp-sub').textContent = 'Best: '+maxFC(d,'inp')?.id+' '+fmt(maxFC(d,'inp')?.inp)+' · Worst: '+minFC(d.filter(x=>x.inp!=null),'inp')?.id;
+
+  // Priority table
+  const tbody = document.getElementById('priorityBody');
+  const sorted = [...d].sort((a,b)=>score(b)-score(a));
+  tbody.innerHTML = sorted.map((w,i)=>{
+    const rk = i<3?`<span class="rk rk${i+1}">${i+1}</span>`:`<span class="rk rk4">${i+1}</span>`;
+    const cls = CLUSTER_CSS[w.cluster]||'to';
+    return `<tr><td>${rk}</td>
+      <td class="fc">${w.id}<span class="ctag ${cls}">${w.cluster}</span></td>
+      <td class="${w.sla_ob!=null&&w.sla_ob<90?'worst':w.sla_ob!=null&&w.sla_ob<95?'caution':''}">${fmtPct(w.sla_ob)}</td>
+      <td class="${w.oot_bl!=null&&w.oot_bl<90?'worst':w.oot_bl!=null&&w.oot_bl<95?'caution':''}">${fmtPct(w.oot_bl)}</td>
+      <td class="${w.sla_ib!=null&&w.sla_ib<97?'worst':w.sla_ib!=null&&w.sla_ib<99?'caution':''}">${fmtPct(w.sla_ib)}</td>
+      <td>${fmt(w.onp)}</td>
+      <td>${fmt(w.inp)}</td>
+      <td class="${w.eit_pick!=null&&w.eit_pick<70?'worst':w.eit_pick!=null&&w.eit_pick<78?'caution':''}">${fmtPct(w.eit_pick)}</td>
+      <td><strong>${score(w)}</strong></td></tr>`;
+  }).join('');
+
+  // ── Bubble Chart 1: ONP vs INP (Productividad) ──
+  destroyChart('bubbleChart1');
+  const ctx1 = document.getElementById('bubbleChart1');
+  if (ctx1) {
+    const bd1 = d.filter(x=>x.onp!=null&&x.inp!=null).map(w=>({
+      x: w.onp,
+      y: w.inp,
+      r: Math.max(5, Math.min(18, (w.pick||30)/6)),
+      label: w.id, cluster: w.cluster
+    }));
+    charts['bubbleChart1'] = new Chart(ctx1, {
+      type:'bubble',
+      data:{datasets:[{
+        data: bd1,
+        backgroundColor: bd1.map(p=>CLUSTER_COLORS[p.cluster]+'bb'),
+        borderColor:      bd1.map(p=>CLUSTER_COLORS[p.cluster]),
+        borderWidth: 1.5
+      }]},
+      options:{
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:c=>{
+            const p=c.raw;
+            return [`${p.label} (${p.cluster})`,`OBNP: ${p.x} u/h`,`IBNP: ${p.y} u/h`];
+          }}}
+        },
+        scales:{
+          x:{title:{display:true,text:'OBNP (u/h)',font:{size:10}},ticks:{font:{size:9}},
+             grid:{color:'#f0f0f0'}},
+          y:{title:{display:true,text:'IBNP (u/h)',font:{size:10}},ticks:{font:{size:9}},
+             grid:{color:'#f0f0f0'}}
+        }
+      }
+    });
+    // Draw FC labels on top of bubbles
+    ctx1.addEventListener('afterRender',()=>{});
+  }
+
+  // ── Bubble Chart 2: SLA OB vs OOT+BL (Servicio) ──
+  destroyChart('bubbleChart2');
+  const ctx2 = document.getElementById('bubbleChart2');
+  if (ctx2) {
+    const bd2 = d.filter(x=>x.sla_ob!=null&&x.oot_bl!=null).map(w=>({
+      x: w.sla_ob,
+      y: w.oot_bl,
+      r: Math.max(5, Math.min(18, w.sla_ib!=null ? Math.max(0,100-w.sla_ib)*3+5 : 7)),
+      label: w.id, cluster: w.cluster,
+      sla_ib: w.sla_ib
+    }));
+    charts['bubbleChart2'] = new Chart(ctx2, {
+      type:'bubble',
+      data:{datasets:[{
+        data: bd2,
+        backgroundColor: bd2.map(p=>CLUSTER_COLORS[p.cluster]+'bb'),
+        borderColor:      bd2.map(p=>CLUSTER_COLORS[p.cluster]),
+        borderWidth: 1.5
+      }]},
+      options:{
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:c=>{
+            const p=c.raw;
+            return [`${p.label} (${p.cluster})`,`SLA OB: ${p.x}%`,`OOT+BL: ${p.y}%`,`SLA IB: ${p.sla_ib!=null?p.sla_ib+'%':'N/D'}`];
+          }}}
+        },
+        scales:{
+          x:{title:{display:true,text:'SLA OB %',font:{size:10}},ticks:{font:{size:9}},
+             min:75, max:102, grid:{color:'#f0f0f0'}},
+          y:{title:{display:true,text:'OOT+BL OB %',font:{size:10}},ticks:{font:{size:9}},
+             min:75, max:102, grid:{color:'#f0f0f0'}}
+        }
+      }
+    });
+  }
+
+  // Matrix
+  const mBody = document.getElementById('matrixBody');
+  const fcols = ['wave_sla','sla_ob','oot_bl','sla_ib','onp','pick','pack','qnp','inp','eit_pick','ocio_pick','eit_pack','ocio_pack','rtw','waves','tote','p2s','corr','ibaud','cc','nh','ant'];
+  // Find best/worst per column
+  const bests = {}, worsts = {};
+  const inverted = ['ocio_pick','ocio_pack','rtw','nh'];
+  fcols.forEach(k=>{
+    const vals = d.map(x=>x[k]).filter(v=>v!=null&&!isNaN(v));
+    if(!vals.length) return;
+    bests[k] = inverted.includes(k) ? Math.min(...vals) : Math.max(...vals);
+    worsts[k] = inverted.includes(k) ? Math.max(...vals) : Math.min(...vals);
+  });
+  mBody.innerHTML = d.map(w=>{
+    const cls = CLUSTER_CSS[w.cluster]||'to';
+    function cell(k,v,dec=1,suffix=''){
+      const display = v!=null ? v.toFixed(dec)+suffix : '<span class="muted">—</span>';
+      let klass='';
+      if(v!=null){
+        if(v===bests[k]) klass='best';
+        else if(v===worsts[k]) klass='worst';
+      }
+      return `<td class="${klass}">${display}</td>`;
+    }
+    return `<tr>
+      <td>${w.id}</td>
+      ${cell('wave_sla',w.wave_sla,1,'%')}
+      ${cell('sla_ob',w.sla_ob,1,'%')}
+      ${cell('oot_bl',w.oot_bl,1,'%')}
+      ${cell('sla_ib',w.sla_ib,1,'%')}
+      ${cell('onp',w.onp,1)}
+      ${cell('pick',w.pick,1)}
+      ${cell('pack',w.pack,1)}
+      ${cell('qnp',w.qnp,1)}
+      ${cell('inp',w.inp,1)}
+      ${cell('eit_pick',w.eit_pick,1,'%')}
+      ${cell('ocio_pick',w.ocio_pick,1,'%')}
+      ${cell('eit_pack',w.eit_pack,1,'%')}
+      ${cell('ocio_pack',w.ocio_pack,1,'%')}
+      ${cell('rtw',w.rtw,0)}
+      ${w.waves>0?cell('waves',w.waves,1,'%'):`<td class="muted">N/A</td>`}
+      ${cell('tote',w.tote,1)}
+      ${cell('p2s',w.p2s,2,'%')}
+      ${cell('corr',w.corr,1)}
+      ${cell('ibaud',w.ibaud,1)}
+      ${cell('cc',w.cc,1)}
+      ${cell('nh',w.nh,1,'%')}
+      ${cell('ant',w.ant,0,'d')}
+    </tr>`;
+  }).join('');
+}
+
+function renderServicio() {
+  const d = fd();
+  document.getElementById('s-wave').innerHTML=fmtPct(avg(d,'wave_sla')).replace('%','')+'<span style="font-size:13px">%</span>';
+  document.getElementById('s-ob').innerHTML=fmtPct(avg(d,'sla_ob')).replace('%','')+'<span style="font-size:13px">%</span>';
+  document.getElementById('s-oot').innerHTML=fmtPct(avg(d,'oot_bl')).replace('%','')+'<span style="font-size:13px">%</span>';
+  document.getElementById('s-ib').innerHTML=fmtPct(avg(d,'sla_ib')).replace('%','')+'<span style="font-size:13px">%</span>';
+  document.getElementById('s-below70').textContent=d.filter(x=>x.wave_sla!=null&&x.wave_sla<70).length;
+
+  const colorWave = v => v>=80?'#34A853':v>=65?'#FBBC04':'#EA4335';
+  const colorOb = v => v>=95?'#34A853':v>=85?'#FBBC04':'#EA4335';
+  const colorIb = v => v>=99?'#34A853':v>=90?'#FBBC04':'#EA4335';
+
+  makeHBar('waveSlaChart', d.map(x=>[x.id,x.wave_sla,x.cluster]),'Wave SLA%', v=>colorWave(v), '%', {invertColor:true, min:0, max:100});
+  makeHBar('slaObChart',   d.map(x=>[x.id,x.sla_ob,x.cluster]), 'SLA OB%',   v=>colorOb(v),  '%', {min:50,max:100});
+  makeHBar('ootBlChart',   d.map(x=>[x.id,x.oot_bl,x.cluster]),'OOT+BL%',   v=>colorOb(v),  '%', {min:50,max:100});
+  makeHBar('slaIbChart',   d.map(x=>[x.id,x.sla_ib,x.cluster]),'SLA IB%',   v=>colorIb(v),  '%', {min:50,max:100});
+
+  const sb = document.getElementById('servicioBody');
+  const sorted = [...d].sort((a,b)=>(b.sla_ob||0)-(a.sla_ob||0));
+  sb.innerHTML = sorted.map(w=>{
+    const cls=CLUSTER_CSS[w.cluster]||'to';
+    const c1=w.wave_sla<65?'worst':w.wave_sla<75?'caution':'';
+    const c2=w.sla_ob!=null&&w.sla_ob<90?'worst':w.sla_ob!=null&&w.sla_ob<95?'caution':'';
+    const c3=w.oot_bl!=null&&w.oot_bl<85?'worst':w.oot_bl!=null&&w.oot_bl<95?'caution':'';
+    const c4=w.sla_ib!=null&&w.sla_ib<90?'worst':w.sla_ib!=null&&w.sla_ib<99?'caution':'';
+    return `<tr><td>${w.id}<span class="ctag ${cls}">${w.cluster}</span></td><td>${w.cluster}</td>
+      <td class="${c1}">${fmtPct(w.wave_sla)}</td>
+      <td class="${c2}">${fmtPct(w.sla_ob)}</td>
+      <td class="${c3}">${fmtPct(w.oot_bl)}</td>
+      <td class="${c4}">${fmtPct(w.sla_ib)}</td></tr>`;
+  }).join('');
+}
+
+function renderProdOB() {
+  const d = fd();
+  const mainFCs = d.filter(x=>x.id!=='MXCH02'&&x.id!=='MXCD08');
+  document.getElementById('po-onp').textContent=fmt(avg(mainFCs,'onp'));
+  document.getElementById('po-pick').textContent=fmt(avg(mainFCs,'pick'));
+  document.getElementById('po-pack').textContent=fmt(avg(mainFCs,'pack'));
+  document.getElementById('po-qnp').textContent=fmt(avg(d.filter(x=>x.id!=='USTX01'),'qnp'));
+
+  const colorOnp = v => v>=45?'#34A853':v>=30?'#FBBC04':'#EA4335';
+  const colorPick = v => v>=70?'#34A853':v>=50?'#FBBC04':'#EA4335';
+  const colorPack = v => v>=180?'#34A853':v>=120?'#FBBC04':'#EA4335';
+  const colorQnp = v => v>=12?'#34A853':v>=6?'#FBBC04':'#EA4335';
+
+  makeHBar('onpChart',  d.map(x=>[x.id,x.onp,x.cluster]),  'ONP (u/h)',      v=>colorOnp(v));
+  makeHBar('pickChart', d.map(x=>[x.id,x.pick,x.cluster]), 'Pick NP (u/h)',  v=>colorPick(v));
+  makeHBar('packChart', d.map(x=>[x.id,x.pack,x.cluster]), 'Pack NP (u/h)',  v=>colorPack(v));
+  makeHBar('qnpChart',  d.map(x=>[x.id,x.qnp,x.cluster]),  'QNP (u/h)',      v=>colorQnp(v));
+}
+
+function renderProdIB() {
+  const d = fd();
+  const best = maxFC(d,'inp');
+  document.getElementById('pi-best').textContent = best ? best.onp+' ('+best.id+')' : '—';
+  document.getElementById('pi-best').textContent = best ? best.inp : '—';
+  makeHBar('inpChart', d.map(x=>[x.id,x.inp,x.cluster]), 'INP (u/h)', v=>v>=130?'#34A853':v>=80?'#FBBC04':'#EA4335');
+  const sorted = [...d].filter(x=>x.inp!=null).sort((a,b)=>b.inp-a.inp);
+  document.getElementById('inpBody').innerHTML = sorted.map((w,i)=>{
+    const cls=CLUSTER_CSS[w.cluster]||'to';
+    return `<tr><td>${w.id}<span class="ctag ${cls}">${w.cluster}</span></td><td>${w.cluster}</td><td>${w.inp.toFixed(1)}</td><td>#${i+1}</td></tr>`;
+  }).join('');
+}
+
+function renderTiempos() {
+  const d = fd();
+  const mainFCs = d.filter(x=>x.id!=='MXCH02'&&x.id!=='MXCD08');
+  const bestEitPick = maxFC(mainFCs,'eit_pick');
+  const worstOcioPick = maxFC(mainFCs,'ocio_pick');
+  const bestEitPack = maxFC(mainFCs,'eit_pack');
+  const worstOcioPack = maxFC(mainFCs,'ocio_pack');
+  document.getElementById('t-eit-pick-best').innerHTML=fmtPct(bestEitPick?.eit_pick)+'<span style="font-size:12px"> '+bestEitPick?.id+'</span>';
+  document.getElementById('t-ocio-pick-worst').innerHTML=fmtPct(worstOcioPick?.ocio_pick)+'<span style="font-size:12px"> '+worstOcioPick?.id+'</span>';
+  document.getElementById('t-eit-pack-best').innerHTML=fmtPct(bestEitPack?.eit_pack)+'<span style="font-size:12px"> '+bestEitPack?.id+'</span>';
+  document.getElementById('t-ocio-pack-worst').innerHTML=fmtPct(worstOcioPack?.ocio_pack)+'<span style="font-size:12px"> '+worstOcioPack?.id+'</span>';
+
+  const colorEit = v => v>=82?'#34A853':v>=72?'#FBBC04':'#EA4335';
+  const colorOcio = v => v<=15?'#34A853':v<=25?'#FBBC04':'#EA4335';
+
+  makeHBar('eitPickChart',  d.map(x=>[x.id,x.eit_pick,x.cluster]),  'EIT Pick%',  v=>colorEit(v),  '%', {min:0,max:100});
+  makeHBar('ocioPickChart', d.map(x=>[x.id,x.ocio_pick,x.cluster]), 'Ocioso Pick%', v=>colorOcio(v), '%', {min:0,max:100});
+  makeHBar('eitPackChart',  d.map(x=>[x.id,x.eit_pack,x.cluster]),  'EIT Pack%',  v=>colorEit(v),  '%', {min:0,max:100});
+  makeHBar('ocioPackChart', d.map(x=>[x.id,x.ocio_pack,x.cluster]), 'Ocioso Pack%', v=>colorOcio(v), '%', {min:0,max:100});
+}
+
+function renderFlow() {
+  const d = fd();
+  const waveFCs = d.filter(x=>x.waves!=null&&x.waves>0);
+  document.getElementById('f-waves').textContent = fmtPct(avg(waveFCs,'waves'));
+
+  makeHBar('rtwChart',  d.map(x=>[x.id,x.rtw,x.cluster]),  'RTW Buffer 0h', v=>v<20000?'#34A853':v<100000?'#FBBC04':'#EA4335');
+  makeHBar('wavesChart',waveFCs.map(x=>[x.id,x.waves,x.cluster]),'% Waves Prod.', v=>v>=95?'#34A853':v>=85?'#FBBC04':'#EA4335', '%', {min:0,max:100});
+  makeHBar('toteChart', d.filter(x=>x.tote!=null).map(x=>[x.id,x.tote,x.cluster]),'u/Tote', v=>v>=15?'#34A853':v>=10?'#C9DAF8':'#FBBC04');
+  makeHBar('p2sChart',  d.filter(x=>x.p2s!=null).map(x=>[x.id,x.p2s,x.cluster]), '% P2S', v=>v>0?'#C9DAF8':'#eee', '%');
+}
+
+function renderCalidad() {
+  const d = fd();
+  const noUstx = d.filter(x=>x.id!=='USTX01');
+  document.getElementById('c-qnp').textContent = fmt(avg(noUstx,'qnp'));
+  document.getElementById('c-corr').textContent = fmt(avg(noUstx.filter(x=>x.corr!=null),'corr'));
+  document.getElementById('c-ibaud').textContent = fmt(avg(noUstx.filter(x=>x.ibaud!=null),'ibaud'));
+  document.getElementById('c-cc').textContent = fmt(avg(noUstx.filter(x=>x.cc!=null),'cc'));
+
+  const cq=v=>v>=12?'#34A853':v>=6?'#FBBC04':'#EA4335';
+  const cn=v=>v>=30?'#34A853':v>=15?'#C9DAF8':'#FBBC04';
+  makeHBar('qnp2Chart',   d.map(x=>[x.id,x.qnp,x.cluster]),   'QNP (u/h)',        v=>cq(v));
+  makeHBar('corrChart',   d.filter(x=>x.corr!=null).map(x=>[x.id,x.corr,x.cluster]),  'Corr Count NP',  v=>cn(v));
+  makeHBar('ibAudChart',  d.filter(x=>x.ibaud!=null).map(x=>[x.id,x.ibaud,x.cluster]),'IB Audit NP',    v=>cn(v));
+  makeHBar('ccChart',     d.filter(x=>x.cc!=null).map(x=>[x.id,x.cc,x.cluster]),      'Cycle Count NP', v=>cn(v));
+}
+
+function renderPersonas() {
+  const d = fd();
+  const avg_nh = avg(d.filter(x=>x.nh!=null),'nh');
+  document.getElementById('p-newhire-avg').innerHTML = fmtPct(avg_nh);
+
+  const cNh = v => v<=20?'#34A853':v<=35?'#FBBC04':'#EA4335';
+  const cAnt = v => v>=365?'#34A853':v>=180?'#C9DAF8':'#FBBC04';
+  makeHBar('newHireChart', d.filter(x=>x.nh!=null).map(x=>[x.id,x.nh,x.cluster]),  '% New Hires', v=>cNh(v), '%', {min:0,max:100});
+  makeHBar('antChart',     d.filter(x=>x.ant!=null).map(x=>[x.id,x.ant,x.cluster]), 'Antigüedad (d)', v=>cAnt(v), 'd');
+}
+
+function renderDailySelectors() {
+  const sel = document.getElementById('fcSelector');
+  sel.innerHTML = DATA.map(d=>`<button class="fc-btn ${selectedFCs.includes(d.id)?'on':''}" onclick="toggleFC('${d.id}',this)">${d.id}</button>`).join('');
+}
+
+function toggleFC(id, btn) {
+  const idx = selectedFCs.indexOf(id);
+  if (idx>=0) { selectedFCs.splice(idx,1); btn.classList.remove('on'); }
+  else { selectedFCs.push(id); btn.classList.add('on'); }
+}
+
+// ════ SECTION SWITCHING ════
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  activeSection = name;
+  renderSection(name);
+}
+
+const rendered = new Set();
+function renderSection(name) {
+  if (rendered.has(name+activeCluster) && name!='resumen') return; // cache per cluster
+  rendered.add(name+activeCluster);
+  setTimeout(()=>{
+    if (name==='resumen')   renderResumen();
+    if (name==='servicio')  renderServicio();
+    if (name==='prod_ob')   renderProdOB();
+    if (name==='prod_ib')   renderProdIB();
+    if (name==='tiempos')   renderTiempos();
+    if (name==='flow')      renderFlow();
+    if (name==='calidad')   renderCalidad();
+    if (name==='personas')  renderPersonas();
+    if (name==='diario')    renderDailySelectors();
+  },20);
+}
+
+function setCluster(cluster, btn) {
+  document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  activeCluster = cluster;
+  rendered.clear();
+  renderSection(activeSection);
+}
+
+// ════ DAILY TREND ════
+async function loadDailyData(days) {
+  days = days || 7;
+  if (!selectedFCs.length) { alert('Selecciona al menos un FC'); return; }
+  document.getElementById('loadingBar').style.display='block';
+  document.getElementById('dailyLoader').style.display='block';
+  const _yd = new Date(); _yd.setDate(_yd.getDate()-1);
+  const _mo = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const _yerLbl = _yd.getDate()+'-'+_mo[_yd.getMonth()];
+  const rangeLabel = days===1 ? 'ayer ('+_yerLbl+')' : 'últimos '+days+' días';
+  document.getElementById('dailyLoader').textContent='Cargando '+rangeLabel+' desde DSOM…';
+  document.getElementById('dailyChart').style.display='none';
+  if (dailyChart) { dailyChart.destroy(); dailyChart=null; }
+
+  // KPIs que DSOM devuelve como ratio 0-1 → hay que ×100 para mostrar %
+  const SLA_KPIS = ['SLA_OB','sla_oot_missed_backlog_included','SLA IB Backlog','wave_sla'];
+  // KPIs que ya vienen como porcentaje en DSOM (0-100 range ó 0-1?)
+  const PCT_KPIS = ['% Effective Time outbound picking','% Ocioso outbound picking',
+                    '% Effective Time outbound packing'];
+  const needsX100 = SLA_KPIS.includes(activeDailyKpi) || PCT_KPIS.includes(activeDailyKpi);
+  const isSla   = SLA_KPIS.includes(activeDailyKpi);  // para ajustar el eje Y 85-102
+  const isPct   = PCT_KPIS.includes(activeDailyKpi);   // eje Y 0-100
+
+  // Etiqueta de unidad en el eje Y
+  const yLabel = (isSla || isPct) ? '%' : 'u/h';
+  // Nombre legible del KPI para el título
+  const kpiNames = {
+    'SLA_OB':'SLA OB', 'sla_oot_missed_backlog_included':'OOT+BL OB',
+    'SLA IB Backlog':'SLA IB', 'wave_sla':'Wave SLA',
+    'Outbound Net Productivity':'ONP', 'Inbound Net Productivity':'INP',
+    'Picking Net Productivity':'Pick NP', 'Packing Net Productivity':'Pack NP',
+    'Quality Net Productivity':'QNP',
+    '% Effective Time outbound picking':'EIT Pick',
+    '% Ocioso outbound picking':'Ocioso Pick',
+    '% Effective Time outbound packing':'EIT Pack'
+  };
+  const kpiLabel = kpiNames[activeDailyKpi] || activeDailyKpi;
+
+  const colors = ['#FFE600','#EA4335','#34A853','#4285F4','#FF6B35','#9B59B6','#1ABC9C','#E67E22'];
+  const datasets = [];
+  for (let i=0; i<selectedFCs.length; i++) {
+    const fc = selectedFCs[i];
+    try {
+      const r = await window.cowork.callMcpTool('mcp__dark-side-of-the-moon__get_operational_trends',{
+        warehouse_id:fc, site_id:'MLM', kpi_name:activeDailyKpi, granularity:'DAY', days_back:days
+      });
+      if (r&&r.result&&r.result.length) {
+        const pts = r.result.sort((a,b)=>a.date_kpi.localeCompare(b.date_kpi));
+        datasets.push({
+          label: fc,
+          data: pts.map(p=>({
+            x: p.date_kpi,
+            y: needsX100 ? +(p.kpi_value*100).toFixed(1) : +p.kpi_value.toFixed(1)
+          })),
+          borderColor: colors[i%colors.length],
+          backgroundColor: colors[i%colors.length]+'33',
+          tension:0.3, fill:false, pointRadius:4
+        });
+      }
+    } catch(e) { console.warn('DSOM error para '+fc, e); }
+  }
+
+  document.getElementById('loadingBar').style.display='none';
+  if (!datasets.length) {
+    document.getElementById('dailyLoader').textContent='Sin datos disponibles para los FCs seleccionados.';
+    return;
+  }
+
+  document.getElementById('dailyLoader').style.display='none';
+  const canvas = document.getElementById('dailyChart');
+  canvas.style.display='block';
+  document.getElementById('dailyChartTitle').textContent =
+    '📈 ' + kpiLabel + ' — ' + (days===1 ? 'Ayer' : 'Últimos '+days+' días') + ' · Diario';
+
+  // Configuración del eje Y según tipo de KPI
+  const yScaleCfg = {
+    title:{display:true, text:yLabel, font:{size:10}},
+    ticks:{font:{size:10}}
+  };
+  if (isSla) {
+    // SLA: zoom en zona crítica para ver variación
+    yScaleCfg.min = 80;
+    yScaleCfg.max = 102;
+  } else if (isPct) {
+    yScaleCfg.min = 0;
+    yScaleCfg.max = 100;
+  }
+  // Para productividad (u/h): autoescala, sin min/max
+
+  dailyChart = new Chart(canvas, {
+    type:'line',
+    data:{datasets},
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'top',labels:{font:{size:11}}},
+        tooltip:{callbacks:{label:ctx=>{
+          const v = ctx.parsed.y;
+          return ctx.dataset.label+': '+(isSla||isPct ? v+'%' : v+' u/h');
+        }}}
+      },
+      scales:{
+        x:{type:'category', ticks:{font:{size:10}}, grid:{color:'#f5f5f5'}},
+        y: yScaleCfg
+      }
+    }
+  });
+}
+
+function setDailyKpi(kpi, btn) {
+  document.querySelectorAll('#sec-diario .chip').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  activeDailyKpi = kpi;
+}
+
+// ════ INIT ════
+// Etiqueta dinámica para botón "Ayer"
+(function() {
+  const d = new Date(); d.setDate(d.getDate()-1);
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const lbl = d.getDate()+'-'+months[d.getMonth()];
+  const btn = document.getElementById('btnAyer');
+  if (btn) btn.textContent = '⚡ Solo Ayer ('+lbl+')';
+})();
+renderSection('resumen');
+</script>
+</body>
+</html>
