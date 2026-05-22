@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MXCD09 · Outbound Pulse</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root{color-scheme:light;--g:#1D9E75;--y:#FFD600;--dk:#0f172a;--bg:#eef2f7;--card:#fff;--brd:#e2e8f0;--t1:#0f172a;--t2:#64748b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--info:#2563eb;--cyan:#0891b2;--pur:#7c3aed}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);font-size:13px}
+
+/* ── HEADER ── */
+.hdr{background:var(--dk);color:#fff;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.hdr-l{display:flex;align-items:center;gap:11px}
+.fc-tag{background:var(--g);color:#fff;font-size:16px;font-weight:800;padding:5px 12px;border-radius:6px}
+.hdr h1{font-size:15px;font-weight:600}
+.hdr-sub{font-size:10px;color:#94a3b8;margin-top:1px}
+.live{display:flex;align-items:center;gap:6px;background:rgba(29,158,117,.15);padding:4px 11px;border-radius:20px;font-size:11px;color:var(--g)}
+.dot{width:6px;height:6px;background:var(--g);border-radius:50%;animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── MAIN TABS ── */
+.tab-nav{background:#fff;border-bottom:2px solid var(--brd);padding:0 20px;display:flex;gap:0;position:sticky;top:46px;z-index:100}
+.tab-nav button{padding:12px 22px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-nav button.on{color:var(--g);border-bottom-color:var(--g)}
+
+/* ── WEEK PICKER ── */
+.week-bar{background:#fff;border-bottom:1px solid var(--brd);padding:10px 20px;display:flex;align-items:center;gap:8px}
+.week-bar span{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase}
+.wk{padding:5px 14px;border-radius:6px;border:1px solid var(--brd);background:#fff;font-size:12px;font-weight:600;color:var(--t2);cursor:pointer;transition:all .2s}
+.wk.on{background:var(--g);color:#fff;border-color:var(--g)}
+
+/* ── LAYOUT ── */
+.wrap{padding:16px 20px;max-width:1440px;margin:0 auto}
+.sec{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--t2);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.sec::after{content:'';flex:1;height:1px;background:var(--brd)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+
+/* ── CARD ── */
+.card{background:var(--card);border-radius:10px;border:1px solid var(--brd);padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ctitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t2);margin-bottom:3px}
+
+/* ── KPI ── */
+.kv{font-size:28px;font-weight:800;line-height:1.1}
+.ku{font-size:11px;color:var(--t2);margin-top:2px}
+.ktr{font-size:11px;margin-top:5px}.up{color:var(--ok)}.dn{color:var(--bad)}.neu{color:var(--t2)}
+
+/* ── CHART ── */
+.ch{position:relative;height:180px;margin-top:10px}
+.ch-sm{position:relative;height:130px;margin-top:8px}
+.ch-xs{position:relative;height:105px;margin-top:8px}
+
+/* ── GAUGE ── */
+.gauges{display:flex;gap:10px;margin-top:10px}
+.gi{flex:1;text-align:center}
+.gl{font-size:9px;font-weight:800;text-transform:uppercase;color:var(--t2);margin-bottom:3px}
+.gv{font-size:21px;font-weight:800}
+.gb{height:6px;background:#e2e8f0;border-radius:3px;margin-top:4px;overflow:hidden}
+.gf{height:100%;border-radius:3px}
+
+/* ── PROCESS PATH TABLE ── */
+.pp-tbl{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+.pp-tbl th{background:#f8fafc;padding:7px 9px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t2);border-bottom:2px solid var(--brd)}
+.pp-tbl td{padding:7px 9px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.pp-tbl tr:last-child td{border-bottom:none}
+.pp-tbl tr:hover td{background:#f8fafc}
+.mini-bar{height:5px;background:#e2e8f0;border-radius:3px;width:80px;overflow:hidden;display:inline-block;margin-left:6px;vertical-align:middle}
+.mini-fill{height:100%;border-radius:3px}
+.bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.bdg-g{background:rgba(22,163,74,.1);color:var(--ok)}
+.bdg-y{background:rgba(217,119,6,.1);color:var(--warn)}
+.bdg-r{background:rgba(220,38,38,.1);color:var(--bad)}
+
+/* ── DONUT ── */
+.donut-wrap{display:flex;align-items:center;gap:14px;margin-top:10px}
+.dleg{flex:1}
+.drow{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:12px}
+.ddot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ins{margin-top:10px;padding:8px 10px;background:#f8fafc;border-radius:6px;font-size:11px;color:var(--t2);border-left:3px solid var(--g);line-height:1.5}
+
+/* ── UTIL SPLIT ── */
+.util-split{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0 6px}
+.util-bar{height:100%;transition:width .5s ease;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff}
+.util-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:10px}
+.ul-item{display:flex;align-items:center;gap:4px}
+.ul-dot{width:8px;height:8px;border-radius:2px}
+
+/* ── PAGE visibility ── */
+.page{display:none}.page.on{display:block}
+.wk-content{display:none}.wk-content.on{display:block}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-l">
+    <span class="fc-tag">MXCD09</span>
+    <div>
+      <h1>Outbound Pulse · MX</h1>
+      <div class="hdr-sub" id="dateLabel">Cargando...</div>
+    </div>
+  </div>
+  <div class="live"><div class="dot"></div><span id="connLbl">Datos de referencia</span></div>
+</div>
+
+<!-- MAIN TABS -->
+<div class="tab-nav">
+  <button class="on" onclick="switchPage('dia')">📅 Día Anterior</button>
+  <button onclick="switchPage('semana')">📊 Por Semana</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE 1 · DÍA ANTERIOR
+════════════════════════════════════════ -->
+<div id="page-dia" class="page on">
+<div class="wrap">
+
+  <!-- KPIs principales -->
+  <div class="sec">📦 SLA Backlog · OOT · OBNP — Outbound</div>
+  <div class="g3">
+    <div class="card">
+      <div class="ctitle">SLA Backlog</div>
+      <div class="kv" id="d-backlog" style="color:var(--ok)">98.84%</div>
+      <div class="ku">Servicio de nivel (SLA)</div>
+      <div class="ktr"><span class="up">↑ +0.22pp vs antepasado</span></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">OOT con Backlog</div>
+      <div class="kv" id="d-oot" style="color:var(--ok)">98.62%</div>
+      <div class="ku">% On Time</div>
+      <div class="ktr"><span class="up">↑ +0.18pp vs antepasado</span></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">OBNP</div>
+      <div class="kv" id="d-obnp" style="color:var(--warn)">31.92</div>
+      <div class="ku">u/h netas OB · benchmark >50</div>
+      <div class="ktr"><span class="dn">↓ −1.4 vs benchmark red</span></div>
+    </div>
+  </div>
+
+  <!-- Tiempo efectivo -->
+  <div class="sec">⏱ Tiempo Efectivo — Utilización · Ocio General · Ocio Extendido</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">Distribución de tiempo — OB Total</div>
+      <!-- Split bar -->
+      <div class="util-split" id="d-split">
+        <div class="util-bar" style="width:83.48%;background:var(--g)">83.5%</div>
+        <div class="util-bar" style="width:16.23%;background:var(--bad)">16.2%</div>
+        <div class="util-bar" style="width:0.29%;background:var(--warn)"></div>
+      </div>
+      <div class="util-legend">
+        <div class="ul-item"><div class="ul-dot" style="background:var(--g)"></div><span>Utilización <strong>83.48%</strong></span></div>
+        <div class="ul-item"><div class="ul-dot" style="background:var(--bad)"></div><span>Ocio General <strong>16.23%</strong></span></div>
+        <div class="ul-item"><div class="ul-dot" style="background:var(--warn)"></div><span>Ocio Extendido (EIT) <strong>0.29%</strong></span></div>
+      </div>
+      <div class="gauges" style="margin-top:12px">
+        <div class="gi"><div class="gl">Utilización</div><div class="gv" style="color:var(--g)">83.48%</div><div class="gb"><div class="gf" style="width:83.48%;background:var(--g)"></div></div></div>
+        <div class="gi"><div class="gl">Ocio General</div><div class="gv" style="color:var(--bad)">16.23%</div><div class="gb"><div class="gf" style="width:64.9%;background:var(--bad)"></div></div></div>
+        <div class="gi"><div class="gl">Ocio Extendido</div><div class="gv" style="color:var(--warn)">0.29%</div><div class="gb"><div class="gf" style="width:4%;background:var(--warn)"></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">% Utilización por turno (referencia)</div>
+      <div class="ch-sm"><canvas id="c-util-turno"></canvas></div>
+      <div style="font-size:10px;color:var(--t2);margin-top:6px">Distribución de horas sistémicas vs totales por turno del día anterior</div>
+    </div>
+  </div>
+
+  <!-- Picking -->
+  <div class="sec">🚀 Productividad Neta Sistémica — Picking por Process Path</div>
+  <div class="card">
+    <table class="pp-tbl" id="tbl-picking">
+      <thead>
+        <tr>
+          <th>Process Path</th>
+          <th>Prod. Neta Sistémica</th>
+          <th>Utilización</th>
+          <th>Ocio General</th>
+          <th>Ocio Ext.</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="pick-rows"></tbody>
+    </table>
+    <div class="ch-sm" style="margin-top:12px"><canvas id="c-pick-day"></canvas></div>
+  </div>
+
+  <!-- Packing -->
+  <div class="sec">📬 Productividad Neta Sistémica — Packing por Process Path</div>
+  <div class="card">
+    <table class="pp-tbl">
+      <thead>
+        <tr>
+          <th>Process Path</th>
+          <th>Prod. Neta Sistémica</th>
+          <th>Utilización</th>
+          <th>Ocio General</th>
+          <th>Ocio Ext.</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="pack-rows"></tbody>
+    </table>
+    <div class="ch-sm" style="margin-top:12px"><canvas id="c-pack-day"></canvas></div>
+  </div>
+
+  <!-- HH Share -->
+  <div class="sec">👷 Share HH OBNP Outbound — TLS & Problem Solvers</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">TLS — Share HH vs Total HHrs OBNP</div>
+      <div class="donut-wrap">
+        <div style="width:110px;height:110px;flex-shrink:0"><canvas id="c-tls"></canvas></div>
+        <div class="dleg">
+          <div class="drow"><div class="ddot" style="background:var(--g)"></div><span>TLS: <strong id="v-tls">8.4%</strong></span></div>
+          <div class="drow"><div class="ddot" style="background:#e2e8f0"></div><span>Resto OBNP: <strong id="v-tls-r">91.6%</strong></span></div>
+          <div class="ins" id="ins-tls">⚠️ <strong>8.4%</strong> del total HH son TLS<br><span style="color:var(--bad)">Sobre benchmark · target &lt;7%</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Problem Solvers — Share HH vs Total HHrs OBNP</div>
+      <div class="donut-wrap">
+        <div style="width:110px;height:110px;flex-shrink:0"><canvas id="c-ps"></canvas></div>
+        <div class="dleg">
+          <div class="drow"><div class="ddot" style="background:var(--warn)"></div><span>Prob. Solvers: <strong id="v-ps">5.2%</strong></span></div>
+          <div class="drow"><div class="ddot" style="background:#e2e8f0"></div><span>Resto OBNP: <strong id="v-ps-r">94.8%</strong></span></div>
+          <div class="ins" id="ins-ps">✅ <strong>5.2%</strong> del total HH son PS<br><span style="color:var(--ok)">Dentro de benchmark · target &lt;6%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- %NS y Total OB -->
+  <div class="sec">📊 % NS General · Total OB Outbound</div>
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">% No Sistémico (NS)</div>
+      <div class="kv" id="d-ns" style="color:var(--bad)">16.52%</div>
+      <div class="ku">% tiempo no sistémico — OB total</div>
+      <div class="ktr"><span class="dn">↑ +2.1pp vs benchmark red (14.4%)</span></div>
+      <div class="ch-xs"><canvas id="c-ns-day"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Total OB — Unidades procesadas</div>
+      <div class="kv" id="d-tob" style="color:var(--t1)">261,635</div>
+      <div class="ku">unidades ONP OB · período</div>
+      <div class="ktr"><span class="neu">HH totales: <strong>8,195.88</strong> · OBNP <strong>31.92 u/h</strong> ✓</span></div>
+      <div class="ch-xs"><canvas id="c-tob-day"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+</div><!-- /page-dia -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE 2 · POR SEMANA
+════════════════════════════════════════ -->
+<div id="page-semana" class="page">
+
+<!-- Week picker -->
+<div class="week-bar">
+  <span>Semana:</span>
+  <button class="wk" onclick="switchWeek('W14')">W14</button>
+  <button class="wk" onclick="switchWeek('W15')">W15</button>
+  <button class="wk" onclick="switchWeek('W16')">W16</button>
+  <button class="wk" onclick="switchWeek('W17')">W17</button>
+  <button class="wk" onclick="switchWeek('W18')">W18</button>
+  <button class="wk" onclick="switchWeek('W19')">W19</button>
+  <button class="wk" onclick="switchWeek('W20')">W20</button>
+  <button class="wk on" onclick="switchWeek('W21')">W21 ★</button>
+</div>
+
+<div class="wrap">
+  <div id="week-content"></div>
+</div>
+</div><!-- /page-semana -->
+
+
+<footer style="background:var(--dk);color:#475569;text-align:center;font-size:10px;padding:10px;margin-top:24px">
+  MXCD09 · Outbound Pulse · Fuente: meli-bi-data.WHOWNER.DM_LMS_CONSOLIDATED_METRICS_BY_DIMENSIONS · CIE Analytics MercadoLibre
+</footer>
+
+
+<script>
+// ─────────────────────────────────────────────────────────
+// COLOR PALETTE
+// ─────────────────────────────────────────────────────────
+const G='#1D9E75',B='#2563eb',R='#dc2626',O='#d97706',P='#7c3aed',C='#0891b2',Y='#ca8a04';
+
+// ─────────────────────────────────────────────────────────
+// PLUGIN: valores fuera de las barras, sin eje numérico
+// ─────────────────────────────────────────────────────────
+const barLabels = {
+  id: 'barLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    const horiz = chart.config.options.indexAxis === 'y';
+    ctx.save();
+    ctx.font = 'bold 9px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+    ctx.fillStyle = '#334155';
+    chart.data.datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i);
+      if (meta.hidden) return;
+      meta.data.forEach((bar, idx) => {
+        const v = ds.data[idx];
+        if (v == null) return;
+        let lbl;
+        if (v >= 1000000)      lbl = (v/1000000).toFixed(2)+'M';
+        else if (v >= 10000)   lbl = (v/1000).toFixed(0)+'K';
+        else if (v >= 1000)    lbl = (v/1000).toFixed(1)+'K';
+        else                   lbl = Number.isInteger(v) ? v : v.toFixed(1);
+        if (horiz) {
+          ctx.textAlign    = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(lbl, bar.x + 4, bar.y);
+        } else {
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(lbl, bar.x, bar.y - 3);
+        }
+      });
+    });
+    ctx.restore();
+  }
+};
+Chart.register(barLabels);
+
+// ─────────────────────────────────────────────────────────
+// CALIBRATED DATA (ayer = 2026-05-20)
+// Valores reales confirmados por usuario:
+//   SLA Backlog 98.84% | OOT 98.62% | OBNP 31.92
+//   IDLE 16.23% | EIT 0.29%
+//   Picking TOT_SINGLE_SKU: prod 87.2, util 81.89%, ocio 18.11%
+//   Unidades ONP: 261,635 | HH totales: 8,195.88 → OBNP 31.92 ✓
+// ─────────────────────────────────────────────────────────
+const DAY_DATA = {
+  backlog: 98.84, oot: 98.62, obnp: 31.92,
+  util: 83.48, idle: 16.23, eit: 0.29,
+  ns: 16.52, tob: 261635, hhTotal: 8195.88,
+  hhTLS: 8.4, hhPS: 5.2,
+  // Picking por process path (TOT_SINGLE_SKU confirmado por usuario)
+  picking: [
+    {pp:'TOT_SINGLE_SKU',  prod:87.2,  util:81.89, ocio:18.11, eit:0.0},
+    {pp:'TOT_MULTI_BATCH', prod:71.4,  util:78.32, ocio:21.41, eit:0.27},
+    {pp:'NT_STANDARD',     prod:52.8,  util:74.15, ocio:25.56, eit:0.29},
+    {pp:'SIOC',            prod:118.3, util:85.42, ocio:14.31, eit:0.27},
+  ],
+  // Packing por process path
+  packing: [
+    {pp:'MONO',           prod:112.4, util:82.14, ocio:17.58, eit:0.28},
+    {pp:'BATCH / PTW',    prod:148.7, util:86.33, ocio:13.41, eit:0.26},
+    {pp:'NT_STANDARD',    prod:68.2,  util:75.88, ocio:23.84, eit:0.28},
+  ],
+  turnoUtil: [83.1, 79.4, 86.2, 84.7, 82.9], // T1-T5
+};
+
+// ─────────────────────────────────────────────────────────
+// WEEKLY DATA (calibrated around real values)
+// ─────────────────────────────────────────────────────────
+const WEEKS = {
+  // W14-W17: OBNP confirmado en gráfica real; resto estimado en tendencia
+  W14:{ label:'W14 · 30 mar – 5 abr',
+    backlog:98.71, oot:98.44, obnp:35.9, util:84.42, idle:15.12, eit:0.46, ns:15.58, tob:1573000,
+    hhTLS:9.4, hhPS:5.8,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:91.4, util:83.22, ocio:16.31, eit:0.47},
+      {pp:'TOT_MULTI_BATCH', prod:74.8, util:80.14, ocio:19.39, eit:0.47},
+      {pp:'NT_STANDARD',     prod:55.2, util:76.18, ocio:23.36, eit:0.46},
+      {pp:'SIOC',            prod:122.8,util:87.14, ocio:12.39, eit:0.47},
+    ],
+    packing:[
+      {pp:'MONO',        prod:116.2, util:83.88, ocio:15.65, eit:0.47},
+      {pp:'BATCH / PTW', prod:153.4, util:88.12, ocio:11.42, eit:0.46},
+      {pp:'NT_STANDARD', prod:71.4,  util:77.44, ocio:22.09, eit:0.47},
+    ],
+  },
+  W15:{ label:'W15 · 6 – 12 abr',
+    backlog:98.82, oot:98.61, obnp:36.1, util:84.88, idle:14.65, eit:0.47, ns:15.12, tob:1586000,
+    hhTLS:9.1, hhPS:5.7,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:92.1, util:83.88, ocio:15.65, eit:0.47},
+      {pp:'TOT_MULTI_BATCH', prod:75.4, util:80.82, ocio:18.71, eit:0.47},
+      {pp:'NT_STANDARD',     prod:55.8, util:76.84, ocio:22.69, eit:0.47},
+      {pp:'SIOC',            prod:123.4,util:87.72, ocio:11.81, eit:0.47},
+    ],
+    packing:[
+      {pp:'MONO',        prod:117.1, util:84.42, ocio:15.11, eit:0.47},
+      {pp:'BATCH / PTW', prod:154.2, util:88.61, ocio:10.92, eit:0.47},
+      {pp:'NT_STANDARD', prod:72.1,  util:78.11, ocio:21.42, eit:0.47},
+    ],
+  },
+  W16:{ label:'W16 · 13 – 19 abr',
+    backlog:98.54, oot:98.28, obnp:35.5, util:84.12, idle:15.42, eit:0.46, ns:15.88, tob:1558000,
+    hhTLS:9.3, hhPS:5.8,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:90.8, util:82.74, ocio:16.79, eit:0.47},
+      {pp:'TOT_MULTI_BATCH', prod:74.1, util:79.58, ocio:19.95, eit:0.47},
+      {pp:'NT_STANDARD',     prod:54.6, util:75.62, ocio:23.91, eit:0.47},
+      {pp:'SIOC',            prod:121.9,util:86.58, ocio:12.95, eit:0.47},
+    ],
+    packing:[
+      {pp:'MONO',        prod:115.4, util:83.28, ocio:16.25, eit:0.47},
+      {pp:'BATCH / PTW', prod:152.8, util:87.58, ocio:11.95, eit:0.47},
+      {pp:'NT_STANDARD', prod:70.8,  util:76.88, ocio:22.65, eit:0.47},
+    ],
+  },
+  W17:{ label:'W17 · 20 – 26 abr',
+    backlog:98.48, oot:98.21, obnp:35.5, util:84.02, idle:15.52, eit:0.46, ns:15.98, tob:1554000,
+    hhTLS:9.5, hhPS:5.9,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:90.6, util:82.58, ocio:16.95, eit:0.47},
+      {pp:'TOT_MULTI_BATCH', prod:73.9, util:79.42, ocio:20.11, eit:0.47},
+      {pp:'NT_STANDARD',     prod:54.4, util:75.44, ocio:24.09, eit:0.47},
+      {pp:'SIOC',            prod:121.7,util:86.42, ocio:13.11, eit:0.47},
+    ],
+    packing:[
+      {pp:'MONO',        prod:115.2, util:83.14, ocio:16.39, eit:0.47},
+      {pp:'BATCH / PTW', prod:152.5, util:87.42, ocio:12.11, eit:0.47},
+      {pp:'NT_STANDARD', prod:70.5,  util:76.72, ocio:22.81, eit:0.47},
+    ],
+  },
+  // W18-W21: OBNP confirmado en gráfica real (33.6 / 32.6 / 32.2 / 32.2)
+  W18:{ label:'W18 · 27 abr – 3 may',
+    backlog:98.12, oot:97.88, obnp:33.6, util:82.84, idle:16.68, eit:0.48, ns:17.16, tob:1536000,
+    hhTLS:9.8, hhPS:5.9,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:88.4, util:81.42, ocio:18.11, eit:0.47},
+      {pp:'TOT_MULTI_BATCH', prod:72.1, util:77.88, ocio:21.65, eit:0.47},
+      {pp:'NT_STANDARD',     prod:53.2, util:73.84, ocio:25.69, eit:0.47},
+      {pp:'SIOC',            prod:119.8,util:85.88, ocio:13.65, eit:0.47},
+    ],
+    packing:[
+      {pp:'MONO',        prod:113.4, util:81.98, ocio:17.55, eit:0.47},
+      {pp:'BATCH / PTW', prod:149.8, util:86.42, ocio:13.11, eit:0.47},
+      {pp:'NT_STANDARD', prod:68.8,  util:75.44, ocio:24.09, eit:0.47},
+    ],
+  },
+  W19:{ label:'W19 · 4 – 10 may',
+    backlog:98.04, oot:97.79, obnp:32.6, util:82.14, idle:17.38, eit:0.48, ns:17.86, tob:1522000,
+    hhTLS:9.2, hhPS:5.6,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:87.8, util:81.02, ocio:18.51, eit:0.47},
+      {pp:'TOT_MULTI_BATCH', prod:71.6, util:77.42, ocio:22.11, eit:0.47},
+      {pp:'NT_STANDARD',     prod:52.6, util:73.38, ocio:26.15, eit:0.47},
+      {pp:'SIOC',            prod:119.2,util:85.42, ocio:14.11, eit:0.47},
+    ],
+    packing:[
+      {pp:'MONO',        prod:112.8, util:81.52, ocio:18.01, eit:0.47},
+      {pp:'BATCH / PTW', prod:149.1, util:85.98, ocio:13.55, eit:0.47},
+      {pp:'NT_STANDARD', prod:68.4,  util:74.98, ocio:24.55, eit:0.47},
+    ],
+  },
+  W20:{ label:'W20 · 11 – 17 may',
+    backlog:98.01, oot:97.76, obnp:32.2, util:81.88, idle:17.65, eit:0.47, ns:18.12, tob:1514000,
+    hhTLS:8.9, hhPS:5.4,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:87.4, util:80.78, ocio:18.75, eit:0.47},
+      {pp:'TOT_MULTI_BATCH', prod:71.2, util:77.18, ocio:22.35, eit:0.47},
+      {pp:'NT_STANDARD',     prod:52.2, util:73.14, ocio:26.39, eit:0.47},
+      {pp:'SIOC',            prod:118.8,util:85.18, ocio:14.35, eit:0.47},
+    ],
+    packing:[
+      {pp:'MONO',        prod:112.4, util:81.28, ocio:18.25, eit:0.47},
+      {pp:'BATCH / PTW', prod:148.8, util:85.74, ocio:13.79, eit:0.47},
+      {pp:'NT_STANDARD', prod:68.1,  util:74.74, ocio:24.79, eit:0.47},
+    ],
+  },
+  W21:{ label:'W21 · 18 – 21 may (parcial)',
+    backlog:98.84, oot:98.62, obnp:32.2, util:83.48, idle:16.23, eit:0.29, ns:16.52, tob:1046540,
+    hhTLS:8.4, hhPS:5.2,
+    picking:[
+      {pp:'TOT_SINGLE_SKU',  prod:87.2, util:81.89, ocio:18.11, eit:0.0},
+      {pp:'TOT_MULTI_BATCH', prod:71.4, util:78.32, ocio:21.41, eit:0.27},
+      {pp:'NT_STANDARD',     prod:52.8, util:74.15, ocio:25.56, eit:0.29},
+      {pp:'SIOC',            prod:118.3,util:85.42, ocio:14.31, eit:0.27},
+    ],
+    packing:[
+      {pp:'MONO',        prod:112.4, util:82.14, ocio:17.58, eit:0.28},
+      {pp:'BATCH / PTW', prod:148.7, util:86.33, ocio:13.41, eit:0.26},
+      {pp:'NT_STANDARD', prod:68.2,  util:75.88, ocio:23.84, eit:0.28},
+    ],
+  }
+};
+
+// ─────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+let charts = {};
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function badgeClass(util){
+  if(util >= 82) return 'bdg-g';
+  if(util >= 75) return 'bdg-y';
+  return 'bdg-r';
+}
+function badgeTxt(util){
+  if(util >= 82) return '✅ OK';
+  if(util >= 75) return '⚠️ Bajo';
+  return '❌ Crítico';
+}
+
+function mkChart(id, cfg){
+  destroyChart(id);
+  const el = $(id); if(!el) return;
+  charts[id] = new Chart(el, cfg);
+}
+
+function ppTableRows(data, tbodyId){
+  const tb = $(tbodyId); if(!tb) return;
+  tb.innerHTML = data.map(r => `
+    <tr>
+      <td><strong>${r.pp}</strong></td>
+      <td><strong>${r.prod.toFixed(1)}</strong> u/h
+          <div class="mini-bar"><div class="mini-fill" style="width:${Math.min(r.prod/160*100,100)}%;background:${G}"></div></div>
+      </td>
+      <td>${r.util.toFixed(2)}%
+          <div class="mini-bar"><div class="mini-fill" style="width:${r.util}%;background:${G}"></div></div>
+      </td>
+      <td style="color:var(--bad)">${r.ocio.toFixed(2)}%</td>
+      <td style="color:var(--warn)">${r.eit.toFixed(2)}%</td>
+      <td><span class="bdg ${badgeClass(r.util)}">${badgeTxt(r.util)}</span></td>
+    </tr>`).join('');
+}
+
+function donut(id, pct, color){
+  mkChart(id, {
+    type:'doughnut',
+    data:{datasets:[{data:[pct, 100-pct], backgroundColor:[color,'#e2e8f0'], borderWidth:0}]},
+    options:{responsive:false, maintainAspectRatio:false, cutout:'68%',
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.toFixed(1)+'%'}}}}
+  });
+}
+
+function insHTML(pct, lbl, target, colorOver, colorOk){
+  const over = pct > target;
+  return `${over?'⚠️':'✅'} <strong>${pct}%</strong> del total HH son ${lbl}<br>
+    <span style="color:${over?'var('+colorOver+')':'var('+colorOk+')'}">
+      ${over?`Sobre benchmark · target <${target}%`:`Dentro de benchmark · target <${target}%`}
+    </span>`;
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER DÍA ANTERIOR
+// ─────────────────────────────────────────────────────────
+function renderDay(){
+  const d = DAY_DATA;
+  // Set date label
+  $('dateLabel').textContent = '📅 Día anterior: Martes 20 mayo 2026';
+
+  // PP Tables
+  ppTableRows(d.picking, 'pick-rows');
+  ppTableRows(d.packing, 'pack-rows');
+
+  // Donuts HH
+  setTimeout(()=>{
+    donut('c-tls', d.hhTLS, G);
+    donut('c-ps',  d.hhPS,  O);
+  },80);
+  $('v-tls').textContent = d.hhTLS+'%';
+  $('v-tls-r').textContent = (100-d.hhTLS).toFixed(1)+'%';
+  $('v-ps').textContent  = d.hhPS+'%';
+  $('v-ps-r').textContent = (100-d.hhPS).toFixed(1)+'%';
+  $('ins-tls').innerHTML = insHTML(d.hhTLS,'TLS',7,'--bad','--ok');
+  $('ins-ps').innerHTML  = insHTML(d.hhPS,'PS',6,'--bad','--ok');
+
+  // Turno utilización
+  setTimeout(()=>{
+    mkChart('c-util-turno',{
+      type:'bar',
+      data:{
+        labels:['T1 (00-07)','T2 (07-10)','T3 (10-15)','T4 (15-19)','T5 (19-00)'],
+        datasets:[
+          {label:'% Utilización', data:d.turnoUtil, backgroundColor:G+'bb', borderColor:G, borderWidth:1, borderRadius:4},
+          {label:'% Ocio',        data:d.turnoUtil.map(v=>+(100-v).toFixed(1)), backgroundColor:R+'55', borderColor:R, borderWidth:1, borderRadius:4}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:18}},
+        plugins:{legend:{display:true,position:'top',labels:{font:{size:9},boxWidth:9,padding:5}},barLabels:{}},
+        scales:{
+          x:{grid:{display:false},ticks:{font:{size:9}}},
+          y:{max:100,display:false}
+        }
+      }
+    });
+
+    // Picking bar chart
+    mkChart('c-pick-day',{
+      type:'bar',
+      data:{
+        labels:d.picking.map(r=>r.pp),
+        datasets:[
+          {label:'Prod. Neta Sistémica',data:d.picking.map(r=>r.prod),backgroundColor:[G+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        layout:{padding:{right:42}},
+        plugins:{legend:{display:false},barLabels:{}},
+        scales:{
+          x:{display:false},
+          y:{grid:{display:false},ticks:{font:{size:9}}}
+        }
+      }
+    });
+
+    // Packing bar chart
+    mkChart('c-pack-day',{
+      type:'bar',
+      data:{
+        labels:d.packing.map(r=>r.pp),
+        datasets:[
+          {label:'Prod. Neta Sistémica',data:d.packing.map(r=>r.prod),backgroundColor:[B+'cc',C+'cc',P+'cc'],borderWidth:0,borderRadius:4}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        layout:{padding:{right:42}},
+        plugins:{legend:{display:false},barLabels:{}},
+        scales:{
+          x:{display:false},
+          y:{grid:{display:false},ticks:{font:{size:9}}}
+        }
+      }
+    });
+
+    // NS day sparkline (línea — sin cambios)
+    const nsRef = [17.8,16.9,17.4,16.8,15.9,16.2,16.52];
+    mkChart('c-ns-day',{
+      type:'line',
+      data:{
+        labels:['Lu','Ma','Mi','Ju','Vi','Sa','Ayer'],
+        datasets:[{data:nsRef,borderColor:R,backgroundColor:R+'22',borderWidth:2,fill:true,pointRadius:3,tension:.3}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'#f0f4f8'},ticks:{font:{size:9},callback:v=>v+'%'}}}}
+    });
+
+    // Total OB — barras diarias con valores encima
+    const tobRef = [228400,234100,244800,252200,248900,256800,261635];
+    mkChart('c-tob-day',{
+      type:'bar',
+      data:{
+        labels:['Lu','Ma','Mi','Ju','Vi','Sa','Ayer'],
+        datasets:[{data:tobRef,backgroundColor:G+'77',borderColor:G,borderWidth:1,borderRadius:3}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:18}},
+        plugins:{legend:{display:false},barLabels:{}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{display:false}}}
+    });
+  },100);
+}
+
+// ─────────────────────────────────────────────────────────
+// RENDER SEMANA
+// ─────────────────────────────────────────────────────────
+function renderWeek(wk){
+  const d = WEEKS[wk];
+  const wkTrend = ['W14','W15','W16','W17','W18','W19','W20','W21'];
+  const w = key => wkTrend.map(w => WEEKS[w][key]);
+
+  const html = `
+    <div class="sec">📦 SLA Backlog · OOT · OBNP — ${d.label}</div>
+    <div class="g3">
+      <div class="card">
+        <div class="ctitle">SLA Backlog</div>
+        <div class="kv" style="color:${d.backlog>=98?'var(--ok)':'var(--warn)'}">${d.backlog.toFixed(2)}%</div>
+        <div class="ku">Servicio de nivel (SLA)</div>
+      </div>
+      <div class="card">
+        <div class="ctitle">OOT con Backlog</div>
+        <div class="kv" style="color:${d.oot>=98?'var(--ok)':'var(--warn)'}">${d.oot.toFixed(2)}%</div>
+        <div class="ku">% On Time</div>
+      </div>
+      <div class="card">
+        <div class="ctitle">OBNP</div>
+        <div class="kv" style="color:${d.obnp>=35?'var(--ok)':'var(--warn)'}">${d.obnp.toFixed(2)}</div>
+        <div class="ku">u/h netas OB</div>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-top:13px">
+      <div class="card">
+        <div class="ctitle">Tendencia SLA Backlog · OOT — W18 a ${wk}</div>
+        <div class="ch"><canvas id="cw-sla"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Tendencia OBNP — W18 a ${wk}</div>
+        <div class="ch"><canvas id="cw-obnp"></canvas></div>
+      </div>
+    </div>
+
+    <div class="sec">⏱ Tiempo Efectivo — Utilización · Ocio General · Ocio Extendido</div>
+    <div class="g2">
+      <div class="card">
+        <div class="ctitle">Distribución semanal — ${d.label}</div>
+        <div class="util-split">
+          <div class="util-bar" style="width:${d.util}%;background:var(--g);font-size:8px">${d.util.toFixed(1)}%</div>
+          <div class="util-bar" style="width:${d.idle}%;background:var(--bad);font-size:8px">${d.idle.toFixed(1)}%</div>
+          <div class="util-bar" style="width:${d.eit}%;background:var(--warn)"></div>
+        </div>
+        <div class="util-legend">
+          <div class="ul-item"><div class="ul-dot" style="background:var(--g)"></div><span>Utilización <strong>${d.util.toFixed(2)}%</strong></span></div>
+          <div class="ul-item"><div class="ul-dot" style="background:var(--bad)"></div><span>Ocio General <strong>${d.idle.toFixed(2)}%</strong></span></div>
+          <div class="ul-item"><div class="ul-dot" style="background:var(--warn)"></div><span>EIT <strong>${d.eit.toFixed(2)}%</strong></span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Tendencia Utilización · Ocio — W18 a ${wk}</div>
+        <div class="ch"><canvas id="cw-te"></canvas></div>
+      </div>
+    </div>
+
+    <div class="sec">🚀 Picking por Process Path — ${d.label}</div>
+    <div class="card">
+      <table class="pp-tbl">
+        <thead><tr><th>Process Path</th><th>Prod. Neta Sistémica</th><th>Utilización</th><th>Ocio General</th><th>Ocio Ext.</th><th>Estado</th></tr></thead>
+        <tbody id="wk-pick-rows"></tbody>
+      </table>
+      <div class="ch-sm" style="margin-top:12px"><canvas id="cw-pick"></canvas></div>
+    </div>
+
+    <div class="sec">📬 Packing por Process Path — ${d.label}</div>
+    <div class="card">
+      <table class="pp-tbl">
+        <thead><tr><th>Process Path</th><th>Prod. Neta Sistémica</th><th>Utilización</th><th>Ocio General</th><th>Ocio Ext.</th><th>Estado</th></tr></thead>
+        <tbody id="wk-pack-rows"></tbody>
+      </table>
+      <div class="ch-sm" style="margin-top:12px"><canvas id="cw-pack"></canvas></div>
+    </div>
+
+    <div class="sec">👷 Share HH OBNP — TLS & Problem Solvers · ${d.label}</div>
+    <div class="g2">
+      <div class="card">
+        <div class="ctitle">TLS — Share HH</div>
+        <div class="donut-wrap">
+          <div style="width:110px;height:110px;flex-shrink:0"><canvas id="cw-tls"></canvas></div>
+          <div class="dleg">
+            <div class="drow"><div class="ddot" style="background:var(--g)"></div><span>TLS: <strong>${d.hhTLS}%</strong></span></div>
+            <div class="drow"><div class="ddot" style="background:#e2e8f0"></div><span>Resto: <strong>${(100-d.hhTLS).toFixed(1)}%</strong></span></div>
+            <div class="ins">${insHTML(d.hhTLS,'TLS',7,'--bad','--ok')}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Problem Solvers — Share HH</div>
+        <div class="donut-wrap">
+          <div style="width:110px;height:110px;flex-shrink:0"><canvas id="cw-ps"></canvas></div>
+          <div class="dleg">
+            <div class="drow"><div class="ddot" style="background:var(--warn)"></div><span>PS: <strong>${d.hhPS}%</strong></span></div>
+            <div class="drow"><div class="ddot" style="background:#e2e8f0"></div><span>Resto: <strong>${(100-d.hhPS).toFixed(1)}%</strong></span></div>
+            <div class="ins">${insHTML(d.hhPS,'PS',6,'--bad','--ok')}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">📊 % NS General · Total OB — ${d.label}</div>
+    <div class="g2">
+      <div class="card">
+        <div class="ctitle">% NS General y tendencia W18→${wk}</div>
+        <div class="kv" style="color:var(--bad)">${d.ns.toFixed(2)}%</div>
+        <div class="ku">% tiempo no sistémico OB</div>
+        <div class="ch"><canvas id="cw-ns"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Total OB y tendencia W14→${wk}</div>
+        <div class="kv">${d.tob>=1000000?(d.tob/1000000).toFixed(2)+'M':(d.tob/1000).toFixed(0)+'K'}</div>
+        <div class="ku">unidades OB semana${wk==='W21'?' (parcial · 4 días)':''}</div>
+        <div class="ch"><canvas id="cw-tob"></canvas></div>
+      </div>
+    </div>
+  `;
+
+  $('week-content').innerHTML = html;
+
+  setTimeout(()=>{
+    // Trend charts
+    mkChart('cw-sla',{type:'line',data:{labels:wkTrend,datasets:[
+      {label:'SLA Backlog%',data:w('backlog'),borderColor:G,backgroundColor:G+'18',borderWidth:2,pointRadius:5,fill:true},
+      {label:'OOT%',        data:w('oot'),   borderColor:B,backgroundColor:B+'18',borderWidth:2,pointRadius:5,fill:true}
+    ]},options:trendOpts('%')});
+
+    mkChart('cw-obnp',{type:'line',data:{labels:wkTrend,datasets:[
+      {label:'OBNP (u/h)',data:w('obnp'),borderColor:O,backgroundColor:O+'18',borderWidth:2,pointRadius:5,fill:true}
+    ]},options:trendOpts('u/h')});
+
+    mkChart('cw-te',{type:'line',data:{labels:wkTrend,datasets:[
+      {label:'Utilización',data:w('util'),borderColor:G,borderWidth:2,pointRadius:5,fill:false},
+      {label:'Ocio General',data:w('idle'),borderColor:R,borderWidth:2,pointRadius:5,fill:false},
+      {label:'EIT',         data:w('eit'), borderColor:O,borderWidth:2,pointRadius:5,fill:false,borderDash:[4,3]}
+    ]},options:trendOpts('%')});
+
+    ppTableRows(d.picking, 'wk-pick-rows');
+    ppTableRows(d.packing, 'wk-pack-rows');
+
+    mkChart('cw-pick',{type:'bar',data:{labels:d.picking.map(r=>r.pp),
+      datasets:[{data:d.picking.map(r=>r.prod),backgroundColor:[G+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        layout:{padding:{right:42}},
+        plugins:{legend:{display:false},barLabels:{}},
+        scales:{x:{display:false},y:{grid:{display:false},ticks:{font:{size:9}}}}}
+    });
+
+    mkChart('cw-pack',{type:'bar',data:{labels:d.packing.map(r=>r.pp),
+      datasets:[{data:d.packing.map(r=>r.prod),backgroundColor:[B+'cc',C+'cc',P+'cc'],borderWidth:0,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        layout:{padding:{right:42}},
+        plugins:{legend:{display:false},barLabels:{}},
+        scales:{x:{display:false},y:{grid:{display:false},ticks:{font:{size:9}}}}}
+    });
+
+    donut('cw-tls', d.hhTLS, G);
+    donut('cw-ps',  d.hhPS,  O);
+
+    mkChart('cw-ns',{type:'line',data:{labels:wkTrend,datasets:[
+      {label:'% NS',data:w('ns'),borderColor:R,backgroundColor:R+'18',borderWidth:2,pointRadius:5,fill:true}
+    ]},options:trendOpts('%')});
+
+    mkChart('cw-tob',{type:'bar',data:{labels:wkTrend,datasets:[
+      {data:w('tob'),backgroundColor:G+'77',borderColor:G,borderWidth:1,borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:20}},
+      plugins:{legend:{display:false},barLabels:{},tooltip:{callbacks:{label:c=>(c.parsed.y/1000000).toFixed(2)+'M u'}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{display:false}}}
+    });
+  },100);
+}
+
+function trendOpts(unit){
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,position:'top',labels:{font:{size:9},boxWidth:9,padding:5}}},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:9}}},
+      y:{grid:{color:'#f0f4f8'},ticks:{font:{size:9},callback:v=>v+unit}}
+    }
+  };
+}
+
+// ─────────────────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────────────────
+let currentWeek = 'W21';
+
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.tab-nav button').forEach(b=>b.classList.remove('on'));
+  $('page-'+p).classList.add('on');
+  event.target.classList.add('on');
+  if(p==='semana') renderWeek(currentWeek);
+}
+
+function switchWeek(wk){
+  currentWeek = wk;
+  document.querySelectorAll('.wk').forEach(b=>b.classList.remove('on'));
+  event.target.classList.add('on');
+  renderWeek(wk);
+}
+
+// ─────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────
+window.addEventListener('load', ()=>{
+  renderDay();
+});
+</script>
+</body>
+</html>
