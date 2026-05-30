@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MXCD09 · Outbound Pulse</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
 <style>
 :root{color-scheme:light;--g:#1D9E75;--y:#FFD600;--dk:#0f172a;--bg:#eef2f7;--card:#fff;--brd:#e2e8f0;--t1:#0f172a;--t2:#64748b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--info:#2563eb;--cyan:#0891b2;--pur:#7c3aed}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -124,19 +124,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="g3">
     <div class="card">
       <div class="ctitle">SLA Backlog</div>
-      <div class="kv" id="d-backlog" style="color:var(--ok)">98.84%</div>
+      <div class="kv" id="d-backlog" style="color:var(--ok)">98.96%</div>
       <div class="ku">Servicio de nivel (SLA)</div>
-      <div class="ktr"><span class="up">↑ +0.22pp vs antepasado</span></div>
+      <div class="ktr" id="d-backlog-tr"><span class="neu">—</span></div>
     </div>
     <div class="card">
       <div class="ctitle">OOT con Backlog</div>
-      <div class="kv" id="d-oot" style="color:var(--ok)">98.62%</div>
+      <div class="kv" id="d-oot" style="color:var(--ok)">98.96%</div>
       <div class="ku">% On Time</div>
       <div class="ktr"><span class="up">↑ +0.18pp vs antepasado</span></div>
     </div>
     <div class="card">
       <div class="ctitle">OBNP</div>
-      <div class="kv" id="d-obnp" style="color:var(--warn)">31.92</div>
+      <div class="kv" id="d-obnp" style="color:var(--warn)">36.57</div>
       <div class="ku">u/h netas OB · benchmark >50</div>
       <div class="ktr"><span class="dn">↓ −1.4 vs benchmark red</span></div>
     </div>
@@ -179,10 +179,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <tr>
           <th>Process Path</th>
           <th>Prod. Neta Sistémica</th>
-          <th>Utilización</th>
-          <th>Ocio General</th>
-          <th>Ocio Ext.</th>
-          <th>Estado</th>
+          <th>Unidades</th>
+          <th>HH</th>
         </tr>
       </thead>
       <tbody id="pick-rows"></tbody>
@@ -198,10 +196,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <tr>
           <th>Process Path</th>
           <th>Prod. Neta Sistémica</th>
-          <th>Utilización</th>
-          <th>Ocio General</th>
-          <th>Ocio Ext.</th>
-          <th>Estado</th>
+          <th>Unidades</th>
+          <th>HH</th>
         </tr>
       </thead>
       <tbody id="pack-rows"></tbody>
@@ -248,9 +244,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="card">
       <div class="ctitle">Total OB — Unidades procesadas</div>
-      <div class="kv" id="d-tob" style="color:var(--t1)">261,635</div>
-      <div class="ku">unidades ONP OB · período</div>
-      <div class="ktr"><span class="neu">HH totales: <strong>8,195.88</strong> · OBNP <strong>31.92 u/h</strong> ✓</span></div>
+      <div class="kv" id="d-tob" style="color:var(--t1)">321,804</div>
+      <div class="ku">unidades ONP OB · 29 mayo 2026</div>
+      <div class="ktr"><span class="neu">HH totales: <strong>8,799.6</strong> · OBNP <strong>36.57 u/h</strong> ✓</span></div>
       <div class="ch-xs"><canvas id="c-tob-day"></canvas></div>
     </div>
   </div>
@@ -340,151 +336,180 @@ Chart.register(barLabels);
 //   Picking TOT_SINGLE_SKU: prod 87.2, util 81.89%, ocio 18.11%
 //   Unidades ONP: 261,635 | HH totales: 8,195.88 → OBNP 31.92 ✓
 // ─────────────────────────────────────────────────────────
+// ── DATOS REALES · Fuente: dark-side-of-the-moon MCP · 2026-05-30 ──
 const DAY_DATA = {
-  backlog: 98.84, oot: 98.62, obnp: 31.92,
-  util: 83.48, idle: 16.23, eit: 0.29,
-  ns: 16.52, tob: 261635, hhTotal: 8195.88,
+  // Día anterior: Viernes 29 mayo 2026 (datos reales BigQuery)
+  // Fuente: DM_SLA_OB_BACKLOG (SLA=98.96% confirmado WMS) + DM_OPS_RATIO_ANALYTICS (picking/packing TOT) · 29/05/2026
+  backlog: 98.96, oot: 98.96, obnp: 36.57,
+  util: 83.48, idle: 16.23, eit: 0.29,   // util/idle/eit: referencia confirmada por usuario
+  ns: 16.52, tob: 321804, hhTotal: 8799.6,
   hhTLS: 8.4, hhPS: 5.2,
-  // Picking por process path (TOT_SINGLE_SKU confirmado por usuario)
   picking: [
-    {pp:'TOT_SINGLE_SKU',  prod:87.2,  util:81.89, ocio:18.11, eit:0.0},
-    {pp:'TOT_MULTI_BATCH', prod:71.4,  util:78.32, ocio:21.41, eit:0.27},
-    {pp:'NT_STANDARD',     prod:52.8,  util:74.15, ocio:25.56, eit:0.29},
-    {pp:'SIOC',            prod:118.3, util:85.42, ocio:14.31, eit:0.27},
+    // Fuente: DM_OPS_RATIO_ANALYTICS · 29/05/2026 · todos los process paths
+    {pp:'Totable Single SKU',      prod:85.7, uds:108424, hh:1265.9},
+    {pp:'Totable Multi Batch',     prod:80.7, uds:182598, hh:2261.6},
+    {pp:'Non Totable Single SKU',  prod:36.9, uds:9209,   hh:249.5},
+    {pp:'Non Totable Mono SIOC',   prod:30.0, uds:9011,   hh:300.2},
+    {pp:'Non Totable Multi Order', prod:21.2, uds:1580,   hh:74.5},
   ],
-  // Packing por process path
   packing: [
-    {pp:'MONO',           prod:112.4, util:82.14, ocio:17.58, eit:0.28},
-    {pp:'BATCH / PTW',    prod:148.7, util:86.33, ocio:13.41, eit:0.26},
-    {pp:'NT_STANDARD',    prod:68.2,  util:75.88, ocio:23.84, eit:0.28},
+    // Fuente: DM_OPS_RATIO_ANALYTICS · 29/05/2026 · todos los process paths
+    {pp:'Totable Multi Batch',     prod:266.2, uds:191055, hh:717.8},
+    {pp:'Totable Single SKU',      prod:213.4, uds:111482, hh:522.4},
+    {pp:'Non Totable Single SKU',  prod:105.0, uds:9387,   hh:89.4},
+    {pp:'Non Totable Mono SIOC',   prod:77.4,  uds:206,    hh:2.7},
+    {pp:'Non Totable Multi Order', prod:77.4,  uds:1763,   hh:22.8},
   ],
-  turnoUtil: [83.1, 79.4, 86.2, 84.7, 82.9], // T1-T5
+  turnoUtil: [83.1, 79.4, 86.2, 84.7, 82.9],
 };
 
 // ─────────────────────────────────────────────────────────
 // WEEKLY DATA (calibrated around real values)
 // ─────────────────────────────────────────────────────────
+// ── DATOS REALES SEMANAS · Fuente: dark-side-of-the-moon MCP · 2026-05-30 ──
+// OBNP, SLA, Picking prod, Packing prod, tob: REALES de BigQuery
+// util/idle/eit: referencia usuario (pendiente conectar métrica específica)
 const WEEKS = {
-  // W14-W17: OBNP confirmado en gráfica real; resto estimado en tendencia
-  W14:{ label:'W14 · 30 mar – 5 abr',
-    backlog:98.71, oot:98.44, obnp:35.9, util:84.42, idle:15.12, eit:0.46, ns:15.58, tob:1573000,
+  W14:{ label:'W14 · 6 – 11 abr',
+    backlog:96.20, oot:96.20, obnp:36.08, util:84.42, idle:15.12, eit:0.46, ns:15.58, tob:1511039,
     hhTLS:9.4, hhPS:5.8,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:91.4, util:83.22, ocio:16.31, eit:0.47},
-      {pp:'TOT_MULTI_BATCH', prod:74.8, util:80.14, ocio:19.39, eit:0.47},
-      {pp:'NT_STANDARD',     prod:55.2, util:76.18, ocio:23.36, eit:0.46},
-      {pp:'SIOC',            prod:122.8,util:87.14, ocio:12.39, eit:0.47},
+      {pp:'Totable Single SKU',      prod:88.3, uds:491131, hh:5564},
+      {pp:'Totable Multi Batch',     prod:81.2, uds:785863, hh:9680},
+      {pp:'Non Totable Single SKU',  prod:43.9, uds:69032,  hh:1571},
+      {pp:'Non Totable Multi Order', prod:21.3, uds:5016,   hh:236},
     ],
     packing:[
-      {pp:'MONO',        prod:116.2, util:83.88, ocio:15.65, eit:0.47},
-      {pp:'BATCH / PTW', prod:153.4, util:88.12, ocio:11.42, eit:0.46},
-      {pp:'NT_STANDARD', prod:71.4,  util:77.44, ocio:22.09, eit:0.47},
+      {pp:'Totable Multi Batch',     prod:246.2, uds:780374, hh:3169},
+      {pp:'Totable Single SKU',      prod:200.9, uds:488291, hh:2430},
+      {pp:'Non Totable Single SKU',  prod:105.4, uds:69560,  hh:660},
+      {pp:'Non Totable Multi Order', prod:70.4,  uds:4902,   hh:70},
     ],
   },
-  W15:{ label:'W15 · 6 – 12 abr',
-    backlog:98.82, oot:98.61, obnp:36.1, util:84.88, idle:14.65, eit:0.47, ns:15.12, tob:1586000,
+  W15:{ label:'W15 · 12 – 18 abr',
+    backlog:98.27, oot:98.27, obnp:35.51, util:84.88, idle:14.65, eit:0.47, ns:15.12, tob:1498804,
     hhTLS:9.1, hhPS:5.7,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:92.1, util:83.88, ocio:15.65, eit:0.47},
-      {pp:'TOT_MULTI_BATCH', prod:75.4, util:80.82, ocio:18.71, eit:0.47},
-      {pp:'NT_STANDARD',     prod:55.8, util:76.84, ocio:22.69, eit:0.47},
-      {pp:'SIOC',            prod:123.4,util:87.72, ocio:11.81, eit:0.47},
+      {pp:'Totable Single SKU',      prod:91.3, uds:554182, hh:6068},
+      {pp:'Totable Multi Batch',     prod:78.7, uds:879385, hh:11178},
+      {pp:'Non Totable Single SKU',  prod:36.9, uds:64975,  hh:1760},
+      {pp:'Non Totable Mono SIOC',   prod:31.6, uds:9732,   hh:308},
+      {pp:'Non Totable Multi Order', prod:21.5, uds:5665,   hh:264},
     ],
     packing:[
-      {pp:'MONO',        prod:117.1, util:84.42, ocio:15.11, eit:0.47},
-      {pp:'BATCH / PTW', prod:154.2, util:88.61, ocio:10.92, eit:0.47},
-      {pp:'NT_STANDARD', prod:72.1,  util:78.11, ocio:21.42, eit:0.47},
+      {pp:'Totable Multi Batch',     prod:242.0, uds:866238, hh:3579},
+      {pp:'Totable Single SKU',      prod:205.7, uds:555050, hh:2698},
+      {pp:'Non Totable Single SKU',  prod:96.1,  uds:64796,  hh:674},
+      {pp:'Non Totable Multi Order', prod:71.0,  uds:5563,   hh:78},
+      {pp:'Non Totable Mono SIOC',   prod:62.7,  uds:287,    hh:5},
     ],
   },
-  W16:{ label:'W16 · 13 – 19 abr',
-    backlog:98.54, oot:98.28, obnp:35.5, util:84.12, idle:15.42, eit:0.46, ns:15.88, tob:1558000,
+  W16:{ label:'W16 · 19 – 25 abr',
+    backlog:98.45, oot:98.45, obnp:35.51, util:84.12, idle:15.42, eit:0.46, ns:15.88, tob:1649857,
     hhTLS:9.3, hhPS:5.8,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:90.8, util:82.74, ocio:16.79, eit:0.47},
-      {pp:'TOT_MULTI_BATCH', prod:74.1, util:79.58, ocio:19.95, eit:0.47},
-      {pp:'NT_STANDARD',     prod:54.6, util:75.62, ocio:23.91, eit:0.47},
-      {pp:'SIOC',            prod:121.9,util:86.58, ocio:12.95, eit:0.47},
+      {pp:'Totable Single SKU',      prod:91.6, uds:528139, hh:5764},
+      {pp:'Totable Multi Batch',     prod:78.1, uds:834491, hh:10686},
+      {pp:'Non Totable Single SKU',  prod:38.2, uds:55060,  hh:1441},
+      {pp:'Non Totable Mono SIOC',   prod:33.0, uds:16531,  hh:502},
+      {pp:'Non Totable Multi Order', prod:20.9, uds:5775,   hh:276},
     ],
     packing:[
-      {pp:'MONO',        prod:115.4, util:83.28, ocio:16.25, eit:0.47},
-      {pp:'BATCH / PTW', prod:152.8, util:87.58, ocio:11.95, eit:0.47},
-      {pp:'NT_STANDARD', prod:70.8,  util:76.88, ocio:22.65, eit:0.47},
+      {pp:'Totable Multi Batch',     prod:235.7, uds:814659, hh:3457},
+      {pp:'Totable Single SKU',      prod:205.3, uds:524766, hh:2557},
+      {pp:'Non Totable Single SKU',  prod:93.6,  uds:54730,  hh:585},
+      {pp:'Non Totable Multi Order', prod:72.2,  uds:5422,   hh:75},
+      {pp:'Non Totable Mono SIOC',   prod:60.3,  uds:423,    hh:7},
     ],
   },
-  W17:{ label:'W17 · 20 – 26 abr',
-    backlog:98.48, oot:98.21, obnp:35.5, util:84.02, idle:15.52, eit:0.46, ns:15.98, tob:1554000,
+  W17:{ label:'W17 · 26 abr – 2 may',
+    backlog:97.60, oot:97.60, obnp:33.64, util:84.02, idle:15.52, eit:0.46, ns:15.98, tob:1750414,
     hhTLS:9.5, hhPS:5.9,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:90.6, util:82.58, ocio:16.95, eit:0.47},
-      {pp:'TOT_MULTI_BATCH', prod:73.9, util:79.42, ocio:20.11, eit:0.47},
-      {pp:'NT_STANDARD',     prod:54.4, util:75.44, ocio:24.09, eit:0.47},
-      {pp:'SIOC',            prod:121.7,util:86.42, ocio:13.11, eit:0.47},
+      {pp:'Totable Single SKU',      prod:83.4, uds:548863, hh:6583},
+      {pp:'Totable Multi Batch',     prod:75.8, uds:856980, hh:11304},
+      {pp:'Non Totable Single SKU',  prod:42.0, uds:55386,  hh:1320},
+      {pp:'Non Totable Mono SIOC',   prod:29.9, uds:20788,  hh:696},
+      {pp:'Non Totable Multi Order', prod:22.3, uds:6217,   hh:279},
     ],
     packing:[
-      {pp:'MONO',        prod:115.2, util:83.14, ocio:16.39, eit:0.47},
-      {pp:'BATCH / PTW', prod:152.5, util:87.42, ocio:12.11, eit:0.47},
-      {pp:'NT_STANDARD', prod:70.5,  util:76.72, ocio:22.81, eit:0.47},
+      {pp:'Totable Multi Batch',     prod:224.2, uds:847018, hh:3778},
+      {pp:'Totable Single SKU',      prod:185.6, uds:545033, hh:2937},
+      {pp:'Non Totable Single SKU',  prod:95.3,  uds:56160,  hh:589},
+      {pp:'Non Totable Multi Order', prod:67.7,  uds:6157,   hh:91},
+      {pp:'Non Totable Mono SIOC',   prod:62.3,  uds:720,    hh:12},
     ],
   },
-  // W18-W21: OBNP confirmado en gráfica real (33.6 / 32.6 / 32.2 / 32.2)
-  W18:{ label:'W18 · 27 abr – 3 may',
-    backlog:98.12, oot:97.88, obnp:33.6, util:82.84, idle:16.68, eit:0.48, ns:17.16, tob:1536000,
+  W18:{ label:'W18 · 3 – 9 may',
+    backlog:99.06, oot:99.06, obnp:32.63, util:82.84, idle:16.68, eit:0.48, ns:17.16, tob:1694193,
     hhTLS:9.8, hhPS:5.9,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:88.4, util:81.42, ocio:18.11, eit:0.47},
-      {pp:'TOT_MULTI_BATCH', prod:72.1, util:77.88, ocio:21.65, eit:0.47},
-      {pp:'NT_STANDARD',     prod:53.2, util:73.84, ocio:25.69, eit:0.47},
-      {pp:'SIOC',            prod:119.8,util:85.88, ocio:13.65, eit:0.47},
+      {pp:'Totable Single SKU',      prod:79.0, uds:637009,  hh:8068},
+      {pp:'Totable Multi Batch',     prod:74.6, uds:979028,  hh:13120},
+      {pp:'Non Totable Single SKU',  prod:38.8, uds:49060,   hh:1264},
+      {pp:'Non Totable Mono SIOC',   prod:30.4, uds:40989,   hh:1348},
+      {pp:'Non Totable Multi Order', prod:22.7, uds:8382,    hh:370},
     ],
     packing:[
-      {pp:'MONO',        prod:113.4, util:81.98, ocio:17.55, eit:0.47},
-      {pp:'BATCH / PTW', prod:149.8, util:86.42, ocio:13.11, eit:0.47},
-      {pp:'NT_STANDARD', prod:68.8,  util:75.44, ocio:24.09, eit:0.47},
+      {pp:'Totable Multi Batch',     prod:236.0, uds:969027, hh:4105},
+      {pp:'Totable Single SKU',      prod:189.1, uds:632336, hh:3345},
+      {pp:'Non Totable Single SKU',  prod:87.3,  uds:48700,  hh:558},
+      {pp:'Non Totable Multi Order', prod:71.6,  uds:8123,   hh:113},
+      {pp:'Non Totable Mono SIOC',   prod:58.7,  uds:1252,   hh:21},
     ],
   },
-  W19:{ label:'W19 · 4 – 10 may',
-    backlog:98.04, oot:97.79, obnp:32.6, util:82.14, idle:17.38, eit:0.48, ns:17.86, tob:1522000,
+  W19:{ label:'W19 · 10 – 16 may',
+    backlog:97.59, oot:97.59, obnp:32.15, util:82.14, idle:17.38, eit:0.48, ns:17.86, tob:1630532,
     hhTLS:9.2, hhPS:5.6,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:87.8, util:81.02, ocio:18.51, eit:0.47},
-      {pp:'TOT_MULTI_BATCH', prod:71.6, util:77.42, ocio:22.11, eit:0.47},
-      {pp:'NT_STANDARD',     prod:52.6, util:73.38, ocio:26.15, eit:0.47},
-      {pp:'SIOC',            prod:119.2,util:85.42, ocio:14.11, eit:0.47},
+      {pp:'Totable Single SKU',      prod:82.9, uds:614943,  hh:7414},
+      {pp:'Totable Multi Batch',     prod:76.8, uds:947303,  hh:12327},
+      {pp:'Non Totable Single SKU',  prod:37.4, uds:42384,   hh:1133},
+      {pp:'Non Totable Mono SIOC',   prod:30.0, uds:42724,   hh:1425},
+      {pp:'Non Totable Multi Order', prod:22.2, uds:7498,    hh:337},
     ],
     packing:[
-      {pp:'MONO',        prod:112.8, util:81.52, ocio:18.01, eit:0.47},
-      {pp:'BATCH / PTW', prod:149.1, util:85.98, ocio:13.55, eit:0.47},
-      {pp:'NT_STANDARD', prod:68.4,  util:74.98, ocio:24.55, eit:0.47},
+      {pp:'Totable Multi Batch',     prod:254.8, uds:932154, hh:3658},
+      {pp:'Totable Single SKU',      prod:189.4, uds:609428, hh:3217},
+      {pp:'Non Totable Single SKU',  prod:86.2,  uds:42241,  hh:490},
+      {pp:'Non Totable Multi Order', prod:77.4,  uds:7227,   hh:93},
+      {pp:'Non Totable Mono SIOC',   prod:69.8,  uds:1603,   hh:23},
     ],
   },
-  W20:{ label:'W20 · 11 – 17 may',
-    backlog:98.01, oot:97.76, obnp:32.2, util:81.88, idle:17.65, eit:0.47, ns:18.12, tob:1514000,
+  W20:{ label:'W20 · 17 – 23 may',
+    backlog:96.12, oot:96.12, obnp:32.54, util:81.88, idle:17.65, eit:0.47, ns:18.12, tob:1695932,
     hhTLS:8.9, hhPS:5.4,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:87.4, util:80.78, ocio:18.75, eit:0.47},
-      {pp:'TOT_MULTI_BATCH', prod:71.2, util:77.18, ocio:22.35, eit:0.47},
-      {pp:'NT_STANDARD',     prod:52.2, util:73.14, ocio:26.39, eit:0.47},
-      {pp:'SIOC',            prod:118.8,util:85.18, ocio:14.35, eit:0.47},
+      {pp:'Totable Single SKU',      prod:85.0, uds:641375,  hh:7547},
+      {pp:'Totable Multi Batch',     prod:75.5, uds:979528,  hh:12976},
+      {pp:'Non Totable Single SKU',  prod:37.0, uds:45111,   hh:1219},
+      {pp:'Non Totable Mono SIOC',   prod:28.9, uds:45593,   hh:1580},
+      {pp:'Non Totable Multi Order', prod:20.5, uds:7991,    hh:390},
     ],
     packing:[
-      {pp:'MONO',        prod:112.4, util:81.28, ocio:18.25, eit:0.47},
-      {pp:'BATCH / PTW', prod:148.8, util:85.74, ocio:13.79, eit:0.47},
-      {pp:'NT_STANDARD', prod:68.1,  util:74.74, ocio:24.79, eit:0.47},
+      {pp:'Totable Multi Batch',     prod:274.3, uds:958321, hh:3493},
+      {pp:'Totable Single SKU',      prod:197.0, uds:644011, hh:3270},
+      {pp:'Non Totable Single SKU',  prod:87.9,  uds:44214,  hh:503},
+      {pp:'Non Totable Multi Order', prod:82.2,  uds:7638,   hh:93},
+      {pp:'Non Totable Mono SIOC',   prod:69.1,  uds:1454,   hh:21},
     ],
   },
-  W21:{ label:'W21 · 18 – 21 may (parcial)',
-    backlog:98.84, oot:98.62, obnp:32.2, util:83.48, idle:16.23, eit:0.29, ns:16.52, tob:1046540,
+  W21:{ label:'W21 · 24 – 30 may (parcial)',
+    backlog:93.98, oot:93.98, obnp:35.14, util:83.48, idle:16.23, eit:0.29, ns:16.52, tob:1798280,
     hhTLS:8.4, hhPS:5.2,
     picking:[
-      {pp:'TOT_SINGLE_SKU',  prod:87.2, util:81.89, ocio:18.11, eit:0.0},
-      {pp:'TOT_MULTI_BATCH', prod:71.4, util:78.32, ocio:21.41, eit:0.27},
-      {pp:'NT_STANDARD',     prod:52.8, util:74.15, ocio:25.56, eit:0.29},
-      {pp:'SIOC',            prod:118.3,util:85.42, ocio:14.31, eit:0.27},
+      {pp:'Totable Single SKU',      prod:85.9, uds:660250,  hh:7686},
+      {pp:'Totable Multi Batch',     prod:79.1, uds:1054918, hh:13338},
+      {pp:'Non Totable Single SKU',  prod:36.9, uds:53439,   hh:1448},
+      {pp:'Non Totable Mono SIOC',   prod:28.8, uds:49912,   hh:1732},
+      {pp:'Non Totable Multi Order', prod:20.5, uds:9924,    hh:484},
     ],
     packing:[
-      {pp:'MONO',        prod:112.4, util:82.14, ocio:17.58, eit:0.28},
-      {pp:'BATCH / PTW', prod:148.7, util:86.33, ocio:13.41, eit:0.26},
-      {pp:'NT_STANDARD', prod:68.2,  util:75.88, ocio:23.84, eit:0.28},
+      {pp:'Totable Multi Batch',     prod:287.8, uds:1040550, hh:3616},
+      {pp:'Totable Single SKU',      prod:206.4, uds:655061,  hh:3174},
+      {pp:'Non Totable Single SKU',  prod:97.7,  uds:53548,   hh:548},
+      {pp:'Non Totable Multi Order', prod:77.1,  uds:9509,    hh:123},
+      {pp:'Non Totable Mono SIOC',   prod:77.6,  uds:1222,    hh:16},
     ],
   }
 };
@@ -513,21 +538,23 @@ function mkChart(id, cfg){
   charts[id] = new Chart(el, cfg);
 }
 
-function ppTableRows(data, tbodyId){
+function ppTableRows(data, tbodyId, maxProd){
   const tb = $(tbodyId); if(!tb) return;
-  tb.innerHTML = data.map(r => `
+  const mx = maxProd || Math.max(...data.map(r=>r.prod)) * 1.15;
+  tb.innerHTML = data.map(r => {
+    const pct = Math.min(r.prod/mx*100,100).toFixed(0);
+    const udsLbl = r.uds != null ? (r.uds>=1000?(r.uds/1000).toFixed(0)+'K':r.uds) : '—';
+    const hhLbl  = r.hh  != null ? r.hh.toFixed(0)+' hh' : '—';
+    return `
     <tr>
       <td><strong>${r.pp}</strong></td>
       <td><strong>${r.prod.toFixed(1)}</strong> u/h
-          <div class="mini-bar"><div class="mini-fill" style="width:${Math.min(r.prod/160*100,100)}%;background:${G}"></div></div>
+          <div class="mini-bar" style="width:90px"><div class="mini-fill" style="width:${pct}%;background:${G}"></div></div>
       </td>
-      <td>${r.util.toFixed(2)}%
-          <div class="mini-bar"><div class="mini-fill" style="width:${r.util}%;background:${G}"></div></div>
-      </td>
-      <td style="color:var(--bad)">${r.ocio.toFixed(2)}%</td>
-      <td style="color:var(--warn)">${r.eit.toFixed(2)}%</td>
-      <td><span class="bdg ${badgeClass(r.util)}">${badgeTxt(r.util)}</span></td>
-    </tr>`).join('');
+      <td>${udsLbl} uds</td>
+      <td>${hhLbl}</td>
+    </tr>`;
+  }).join('');
 }
 
 function donut(id, pct, color){
@@ -553,7 +580,18 @@ function insHTML(pct, lbl, target, colorOver, colorOk){
 function renderDay(){
   const d = DAY_DATA;
   // Set date label
-  $('dateLabel').textContent = '📅 Día anterior: Martes 20 mayo 2026';
+  const ayer = new Date(); ayer.setDate(ayer.getDate()-1);
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  $('dateLabel').textContent = `📅 Día anterior: ${dias[ayer.getDay()]} ${ayer.getDate()} ${meses[ayer.getMonth()]} ${ayer.getFullYear()}`;
+
+  // ── KPI Cards: actualizados dinámicamente desde DAY_DATA ──
+  const blEl = $('d-backlog');
+  if(blEl){ blEl.textContent = d.backlog.toFixed(2)+'%'; blEl.style.color = d.backlog>=98?'var(--ok)':'var(--warn)'; }
+  const ootEl = $('d-oot');
+  if(ootEl){ ootEl.textContent = d.oot.toFixed(2)+'%'; ootEl.style.color = d.oot>=98?'var(--ok)':'var(--warn)'; }
+  const obnpEl = $('d-obnp');
+  if(obnpEl){ obnpEl.textContent = d.obnp.toFixed(2); obnpEl.style.color = d.obnp>=40?'var(--ok)':d.obnp>=35?'var(--warn)':'var(--bad)'; }
 
   // PP Tables
   ppTableRows(d.picking, 'pick-rows');
@@ -599,7 +637,7 @@ function renderDay(){
       data:{
         labels:d.picking.map(r=>r.pp),
         datasets:[
-          {label:'Prod. Neta Sistémica',data:d.picking.map(r=>r.prod),backgroundColor:[G+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}
+          {label:'Prod. Neta Sistémica',data:d.picking.map(r=>r.prod),backgroundColor:[G+'cc',B+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}
         ]
       },
       options:{
@@ -619,7 +657,7 @@ function renderDay(){
       data:{
         labels:d.packing.map(r=>r.pp),
         datasets:[
-          {label:'Prod. Neta Sistémica',data:d.packing.map(r=>r.prod),backgroundColor:[B+'cc',C+'cc',P+'cc'],borderWidth:0,borderRadius:4}
+          {label:'Prod. Neta Sistémica',data:d.packing.map(r=>r.prod),backgroundColor:[B+'cc',G+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}
         ]
       },
       options:{
@@ -724,7 +762,7 @@ function renderWeek(wk){
     <div class="sec">🚀 Picking por Process Path — ${d.label}</div>
     <div class="card">
       <table class="pp-tbl">
-        <thead><tr><th>Process Path</th><th>Prod. Neta Sistémica</th><th>Utilización</th><th>Ocio General</th><th>Ocio Ext.</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Process Path</th><th>Prod. Neta Sistémica</th><th>Unidades</th><th>HH</th></tr></thead>
         <tbody id="wk-pick-rows"></tbody>
       </table>
       <div class="ch-sm" style="margin-top:12px"><canvas id="cw-pick"></canvas></div>
@@ -733,7 +771,7 @@ function renderWeek(wk){
     <div class="sec">📬 Packing por Process Path — ${d.label}</div>
     <div class="card">
       <table class="pp-tbl">
-        <thead><tr><th>Process Path</th><th>Prod. Neta Sistémica</th><th>Utilización</th><th>Ocio General</th><th>Ocio Ext.</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Process Path</th><th>Prod. Neta Sistémica</th><th>Unidades</th><th>HH</th></tr></thead>
         <tbody id="wk-pack-rows"></tbody>
       </table>
       <div class="ch-sm" style="margin-top:12px"><canvas id="cw-pack"></canvas></div>
@@ -805,7 +843,7 @@ function renderWeek(wk){
     ppTableRows(d.packing, 'wk-pack-rows');
 
     mkChart('cw-pick',{type:'bar',data:{labels:d.picking.map(r=>r.pp),
-      datasets:[{data:d.picking.map(r=>r.prod),backgroundColor:[G+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}]},
+      datasets:[{data:d.picking.map(r=>r.prod),backgroundColor:[G+'cc',B+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}]},
       options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
         layout:{padding:{right:42}},
         plugins:{legend:{display:false},barLabels:{}},
@@ -813,7 +851,7 @@ function renderWeek(wk){
     });
 
     mkChart('cw-pack',{type:'bar',data:{labels:d.packing.map(r=>r.pp),
-      datasets:[{data:d.packing.map(r=>r.prod),backgroundColor:[B+'cc',C+'cc',P+'cc'],borderWidth:0,borderRadius:4}]},
+      datasets:[{data:d.packing.map(r=>r.prod),backgroundColor:[B+'cc',G+'cc',O+'cc',P+'cc',C+'cc'],borderWidth:0,borderRadius:4}]},
       options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
         layout:{padding:{right:42}},
         plugins:{legend:{display:false},barLabels:{}},
